@@ -2,9 +2,8 @@ import json
 import re
 import uuid
 from typing import Optional, AsyncGenerator
-import ollama
 
-from app.config import settings
+from app.services.llm import llm_complete
 from app.services.vector_store import vector_store
 from app.services.web_search import search_web
 
@@ -54,13 +53,10 @@ def _extract_json(text: str):
 
 
 async def suggest_subtopics(topic: str, model: Optional[str] = None) -> list[str]:
-    client = ollama.AsyncClient(host=settings.ollama_base_url)
-    resp = await client.chat(
-        model=model or settings.ollama_model,
-        messages=[{"role": "user", "content": SUBTOPIC_PROMPT.format(topic=topic)}],
-        stream=False,
+    raw = await llm_complete(
+        [{"role": "user", "content": SUBTOPIC_PROMPT.format(topic=topic)}], model
     )
-    result = _extract_json(resp.message.content.strip())
+    result = _extract_json(raw.strip())
     if isinstance(result, list) and result:
         return result[:5]
     return ["Core Concepts", "Key Facts", "Applications", "History", "Advanced Topics"]
@@ -74,7 +70,6 @@ async def generate_questions_streamed(
     model: Optional[str] = None,
 ) -> AsyncGenerator[tuple[str, object], None]:
     """Yields ("status", message_str) during processing, then ("done", questions_list)."""
-    client = ollama.AsyncClient(host=settings.ollama_base_url)
     count_per_source = max(2, TOTAL_QUESTIONS // len(sources)) if sources else TOTAL_QUESTIONS
     all_questions: list[dict] = []
 
@@ -116,13 +111,8 @@ async def generate_questions_streamed(
             context_block=context_block,
         )
 
-        resp = await client.chat(
-            model=model or settings.ollama_model,
-            messages=[{"role": "user", "content": prompt}],
-            stream=False,
-        )
-
-        parsed = _extract_json(resp.message.content.strip())
+        raw = await llm_complete([{"role": "user", "content": prompt}], model)
+        parsed = _extract_json(raw.strip())
         if isinstance(parsed, list):
             count = 0
             for q in parsed:

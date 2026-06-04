@@ -9,14 +9,23 @@ router = APIRouter(prefix="/status", tags=["status"])
 
 @router.get("")
 async def system_status():
-    try:
-        client = ollama.AsyncClient(host=settings.ollama_base_url)
-        ps = await client.ps()
-        loaded = [m.model for m in ps.models] if ps.models else []
-        ollama_status = "running"
-    except Exception:
-        loaded = []
-        ollama_status = "offline"
+    # LLM provider status
+    if settings.llm_provider == "groq":
+        llm_status = "groq"
+        active_model = settings.groq_model
+        model_loaded = True  # Groq is always "ready"
+    else:
+        try:
+            client = ollama.AsyncClient(host=settings.ollama_base_url)
+            ps = await client.ps()
+            loaded = [m.model for m in ps.models] if ps.models else []
+            llm_status = "running"
+            active_model = settings.ollama_model
+            model_loaded = settings.ollama_model in loaded
+        except Exception:
+            llm_status = "offline"
+            active_model = settings.ollama_model
+            model_loaded = False
 
     try:
         collections = vector_store.list_collections()
@@ -28,10 +37,10 @@ async def system_status():
         chroma_status = "error"
 
     return {
-        "ollama": ollama_status,
-        "model": settings.ollama_model,
-        "model_loaded": settings.ollama_model in loaded,
-        "loaded_models": loaded,
+        "ollama": llm_status,
+        "model": active_model,
+        "model_loaded": model_loaded,
+        "loaded_models": [],
         "vector_db": "ChromaDB",
         "chroma_status": chroma_status,
         "embedding_model": settings.embedding_model,
@@ -39,4 +48,5 @@ async def system_status():
         "total_chunks": total_chunks,
         "rag_mode": True,
         "fine_tuning": False,
+        "llm_provider": settings.llm_provider,
     }

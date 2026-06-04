@@ -1,5 +1,5 @@
 const API_KEY = "enterprise-rag-secret";
-const BASE = "/api/v1";
+const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api/v1";
 
 const headers = () => ({
   "X-API-Key": API_KEY,

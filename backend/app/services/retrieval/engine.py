@@ -6,16 +6,14 @@ Retrieval strategies:
   multi_query — Multiple query variations merged
 """
 
-import json
 import re
 import time
 from enum import Enum
 from typing import Optional
 
-import ollama
 from rank_bm25 import BM25Okapi
 
-from app.config import settings
+from app.services.llm import llm_complete
 from app.services.vector_store import vector_store
 
 
@@ -113,7 +111,6 @@ def _hybrid(question: str, collection: str, top_k: int, alpha: float = 0.5) -> t
 
 async def _hyde(question: str, collection: str, top_k: int, model: Optional[str]) -> tuple[list[dict], dict]:
     t0 = time.perf_counter()
-    client = ollama.AsyncClient(host=settings.ollama_base_url)
 
     # 1. Generate hypothetical answer
     hypo_prompt = (
@@ -121,12 +118,8 @@ async def _hyde(question: str, collection: str, top_k: int, model: Optional[str]
         f'"{question}"\n'
         f"Write the passage only, no preamble."
     )
-    resp = await client.chat(
-        model=model or settings.ollama_model,
-        messages=[{"role": "user", "content": hypo_prompt}],
-        stream=False,
-    )
-    hypo_doc = resp.message.content.strip()
+    hypo_doc = await llm_complete([{"role": "user", "content": hypo_prompt}], model)
+    hypo_doc = hypo_doc.strip()
 
     # 2. Search with hypothetical doc as query
     results = vector_store.query(collection, hypo_doc, top_k)
@@ -145,19 +138,14 @@ async def _hyde(question: str, collection: str, top_k: int, model: Optional[str]
 
 async def _multi_query(question: str, collection: str, top_k: int, model: Optional[str]) -> tuple[list[dict], dict]:
     t0 = time.perf_counter()
-    client = ollama.AsyncClient(host=settings.ollama_base_url)
 
     # 1. Generate query variations
     prompt = (
         f'Generate 3 different phrasings of this question for search:\n"{question}"\n'
         f'Return a JSON array of 3 strings only.'
     )
-    resp = await client.chat(
-        model=model or settings.ollama_model,
-        messages=[{"role": "user", "content": prompt}],
-        stream=False,
-    )
-    variations = _extract_list(resp.message.content.strip())[:3]
+    raw = await llm_complete([{"role": "user", "content": prompt}], model)
+    variations = _extract_list(raw.strip())[:3]
     all_queries = [question] + variations
 
     # 2. Retrieve for each query

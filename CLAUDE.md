@@ -6,11 +6,17 @@ Full-stack RAG (Retrieval-Augmented Generation) application built entirely on lo
 
 ---
 
+## Project location
+
+```
+/Users/vaibhavmishra/Documents/personalGitHub/RAG-Assistant/
+```
+
 ## How to start the project
 
 ### Backend
 ```bash
-cd backend
+cd /Users/vaibhavmishra/Documents/personalGitHub/RAG-Assistant/backend
 .venv/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 - Uses `.venv/bin/python3` — **not** the system Python. The system Python (homebrew) does NOT have the project dependencies.
