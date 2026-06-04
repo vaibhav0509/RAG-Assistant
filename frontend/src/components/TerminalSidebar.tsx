@@ -4,6 +4,8 @@ import { Terminal, X, Trash2, Circle, BarChart2 } from "lucide-react";
 import { useProcess, ProcessEvent, EventTag, EventStatus } from "../context/ProcessContext";
 import { fetchPerfHistory, fetchPerfStats } from "../api/client";
 
+const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api/v1";
+
 // ─── terminal log ───────────────────────────────────────────────────────────
 
 const TAG_COLORS: Record<EventTag, string> = {
@@ -234,7 +236,7 @@ export function TerminalSidebar({ open, onClose }: { open: boolean; onClose: () 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch("/api/v1/status", { headers: { "X-API-Key": "enterprise-rag-secret" } });
+        const res = await fetch(`${BASE}/status`, { headers: { "X-API-Key": "enterprise-rag-secret" } });
         if (res.ok) setSysStatus(await res.json());
       } catch { /* ignore */ }
     };
