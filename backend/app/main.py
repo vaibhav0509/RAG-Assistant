@@ -26,6 +26,10 @@ app.add_middleware(
 
 @app.middleware("http")
 async def api_key_guard(request: Request, call_next):
+    # Allow CORS preflight requests through — CORS middleware handles them
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     if request.url.path in ("/", "/health", "/docs", "/openapi.json", "/redoc"):
         return await call_next(request)
 
