@@ -20,6 +20,6 @@ COPY app/ ./app/
 # ChromaDB data directory — mount a Railway volume here for persistence
 ENV CHROMA_PERSIST_DIR=/data/chroma_db
 
-EXPOSE 8000
+EXPOSE ${PORT:-8080}
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
