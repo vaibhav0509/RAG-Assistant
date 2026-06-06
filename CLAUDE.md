@@ -2,7 +2,9 @@
 
 ## Project overview
 
-Full-stack RAG (Retrieval-Augmented Generation) application built entirely on local infrastructure — no cloud LLM APIs. Key design constraint: **Ollama for all LLM calls, ChromaDB for vector storage, React + Vite frontend**.
+**AI Studio** — a full-stack local AI workspace with five tools: RAG Chat, ReAct Agent, Quiz Game, CV→Portfolio builder, and a Blueprint docs page. Originally a pure RAG assistant, now a multi-tool AI playground.
+
+LLM inference: **Ollama** (local, default) or **Groq** (cloud, set `LLM_PROVIDER=groq` + `GROQ_API_KEY`). Vector storage: **ChromaDB**. Frontend: **React + Vite**.
 
 ---
 
@@ -134,8 +136,8 @@ Four strategies selectable at upload time via `chunk_strategy` form field:
 
 ```
 frontend/src/
-├── App.tsx                       # Root — tabs (Chat/Quiz Game/Agent/Portfolio/Blueprint), model selector, monitor button, ProcessProvider
-├── api/client.ts                 # All fetch calls — API key injected, streamChat() is async generator
+├── App.tsx                       # Root — IconNav (desktop) + MobileNav (bottom bar), all tabs CSS-mounted, ProcessProvider
+├── api/client.ts                 # All fetch calls — API key injected, streamChat() async generator, streamAgent(), parsePortfolio()
 ├── context/ProcessContext.tsx    # Event bus for terminal monitor — useProcess() hook, log(tag, msg, status)
 ├── hooks/useChat.ts              # Chat state — sendMessage(), clearMessages(), logs events to ProcessContext
 ├── types/index.ts                # Message, Source types
@@ -144,12 +146,12 @@ frontend/src/
     ├── MessageList.tsx           # Message list with markdown rendering
     ├── DocumentUpload.tsx        # Drag-drop upload with chunking strategy picker
     ├── RetrievalSelector.tsx     # Strategy dropdown + Top-K select
-    ├── ModelSelector.tsx         # Ollama model dropdown
-    ├── Sidebar.tsx               # Left sidebar (collections list)
-    ├── TerminalSidebar.tsx       # Right panel — LOG tab + PERFORMANCE tab
-    ├── AgentPage.tsx             # Agent tab — ReAct loop UI with mini orbit spinner, ReAct explainer, step cards
-    ├── PortfolioPage.tsx         # Portfolio tab — upload PDF → LLM parses → animated portfolio page with DiceBear avatar
-    ├── Blueprint.tsx             # Blueprint tab — interactive project showcase (see below)
+    ├── ModelSelector.tsx         # Ollama model dropdown (fetches /api/v1/models)
+    ├── Sidebar.tsx               # Collections list — only shown when Chat tab active, desktop only
+    ├── TerminalSidebar.tsx       # Right panel — LOG tab + PERFORMANCE tab (320px, slides in)
+    ├── AgentPage.tsx             # Agent tab — ReAct loop UI, MiniSpinner, ReAct explainer, step cards
+    ├── PortfolioPage.tsx         # Portfolio tab — upload PDF → parse → template picker → animated portfolio
+    ├── Blueprint.tsx             # Blueprint tab — 8-section docs page with scrollspy TOC (see below)
     └── game/
         ├── GamePage.tsx          # Quiz game orchestrator
         ├── TopicSetup.tsx        # Topic input + subtopic suggestion
@@ -159,14 +161,29 @@ frontend/src/
         └── GameAnalysis.tsx      # Post-game score breakdown and analysis
 ```
 
+### Layout architecture
+
+```
+[IconNav 60px dark] | [Sidebar? (chat+desktop only)] | [Tab panels — absolute inset-0, CSS invisible/pointer-events-none] | [TerminalSidebar 320px]
+                                                                                    ↕
+                                                              [MobileNav fixed bottom — md:hidden]
+```
+
+- **Tab persistence**: All 5 tabs are always mounted. Inactive tabs use `invisible pointer-events-none` (not unmounted) to preserve component state across tab switches.
+- **Collections Sidebar**: Conditionally rendered at App level — only when `tab === "chat"` AND on desktop (`hidden md:flex`).
+- **Mobile bottom nav**: Fixed bar with 5 tab icons + monitor toggle. Content area uses `mb-16 md:mb-0` to avoid overlap.
+- **Desktop icon nav**: 60px `bg-gray-950` sidebar with tooltip on hover (label + hint text). Monitor toggle at bottom.
+- **App name**: "AI Studio" (updated from "RAG Assistant" everywhere including log messages).
+
 ### Key patterns
 
 **SSE streaming**: `streamChat()` in `client.ts` is an `async function*` that yields `{token}` events and a final `{done, sources, perf}` event.
 
-**Process monitor events**: Use `useProcess()` → `log(tag, message, status)`. Tags: `SYSTEM QUERY EMBED RETRIEVAL CONTEXT MODEL STREAM DONE WEB GAME ANSWER DB RAG AGENT TOOL RESULT`. Status: `info running success error warn`.
+**Process monitor events**: Use `useProcess()` → `log(tag, message, status)`. Tags: `SYSTEM QUERY EMBED RETRIEVAL CONTEXT MODEL STREAM DONE WEB GAME ANSWER DB RAG AGENT TOOL RESULT PORTFOLIO`. Status: `info running success error warn`.
 - `AGENT` (violet) — agent question, iteration thoughts, done/error
 - `TOOL` (amber) — tool name + input
 - `RESULT` (sky) — observation/tool result preview
+- `PORTFOLIO` (lime) — CV parse progress steps
 
 **Brand color**: `brand-500` / `brand-600` (configured in Tailwind — check `tailwind.config.js`).
 
@@ -174,19 +191,23 @@ frontend/src/
 
 ## Blueprint tab (`components/Blueprint.tsx`)
 
-The third tab in the app — an interactive project showcase. 11 animated sections:
+The last tab — an interactive project showcase. **8 sections** (reduced from 11 by merging/removing redundant ones):
 
 1. **Hero** — dark gradient banner, animated tech badges (framer-motion stagger)
 2. **Live Metrics** — pulls `/status` + `/perf/stats`, animated number counters
-3. **RAG Pipeline** — two-row animated flow diagram (Ingest + Query paths)
+3. **RAG Pipeline** — three-row animated flow diagram (Ingest, Chat Query, Agent ReAct)
 4. **Architecture Diagram** — CSS system map (Browser → FastAPI → Services layer)
-5. **What We Built** — 8 feature cards with hover lift animations
-6. **Concepts Deep Dive** — expandable accordion (RAG, Embeddings, BM25, HyDE, RRF, Chunking, SSE, Context API)
+5. **What We Built** — 11 feature cards; each shows a `↗ proves: ...` skill tag at the bottom (replaces the old standalone "What This Proves" section)
+6. **Concepts Deep Dive** — expandable accordion (RAG, Embeddings, BM25, HyDE, RRF, Chunking, SSE, ReAct, Context API)
 7. **Retrieval Strategy Comparison** — 4 cards with animated speed/precision/complexity bars
-8. **What This Proves** — skills-map cards linking features to interview-ready competencies
-9. **Interview Cheat Sheet** — dark-themed Q&A accordion with 6 model answers
-10. **Tech Stack** — grid cards explaining why each dependency was chosen
-11. **What's Next** — roadmap cards for future features
+8. **Interview Cheat Sheet** — dark-themed Q&A accordion with 7 model answers
+9. **Stack & Roadmap** — tech stack cards + roadmap items in one merged section
+
+### Scrollspy
+- `IntersectionObserver` watches `[data-section]` elements inside the scroll container `ref`.
+- Sticky TOC sidebar (`w-[168px]`, `xl` screens only) with anchor buttons that call `scrollIntoView`.
+- Active section highlighted with `border-brand-500 text-brand-600`.
+- No window scroll — observer uses `root: scrollRef.current` so it works inside the flex panel.
 
 All sections use `whileInView` scroll-triggered entrance animations. No additional npm packages required.
 
@@ -253,22 +274,47 @@ All requests require header: `X-API-Key: enterprise-rag-secret`
 - LLM parses into structured JSON: name, title, summary, skills, experience, education, projects, certifications, links
 - If PDF has a photo → displayed as profile picture
 - If no photo → DiceBear avatar (gender-aware, name-seeded) — user can pick from 4 styles (Adventurer, Lorelei, Micah, Notionists)
-- Animated portfolio page: hero, skills, experience timeline, project cards, education, links
 - "Export PDF" button → `window.print()` with print-only CSS
 - Requires `pdfplumber>=0.11.0` in backend
 
+### Template system (`PortfolioPage.tsx`)
+
+Templates are registered in the `TEMPLATES` array with `available: boolean`. Unavailable templates show a "Coming Soon" placeholder. All 5 templates are currently live.
+
+| Template ID | Design | Key details |
+|---|---|---|
+| `basic` | Clean & professional | Gradient hero (`gray-900→brand-900→purple-900`), skills pills with hover, experience timeline with brand/purple left border, 2-col project grid with hover lift |
+| `creative` | Bold & full-bleed | Dark `#0d0d0d` hero with 3 animated gradient orbs, stacked giant name, offset avatar with shadow block, numbered sections (01–06), animated skill bars (deterministic fill from skill name hash), two-column experience with company pill badges, gradient project card headers cycling `CREATIVE_PALETTE` |
+| `dark` | Terminal aesthetic | CRT scanline overlay (fixed, 7% opacity), green ↔ amber color toggle (single `C` palette object), avatar in box-drawing character frame (`┌── portrait ──┐`), 3-char monospace avatar style buttons, sections as fake shell commands (`$ whoami`, `$ ls -1 ./skills/`, `$ cat experience.log` with `├─` tree lines, `$ ls -la ./projects/` with `drwxr-xr-x`), blinking `▌` cursor at end |
+| `oldschool` | 1960s letterhead | Parchment `#f5f0e8` background, Georgia/Times New Roman serif, centered letterhead with `══` double-rule borders and `❦` ornament, dynamically numbered sections from `OLD_SCHOOL_PARTS[]` array (PART ONE / TWO / THREE…), no avatar, experience with em-dash `—` bullets, formal *"Yours faithfully"* closing |
+| `nineties` | GeoCities nostalgia | **Fun ↔ Chaos toggle** in the header. Fun: Comic Sans, navy `#0000aa` headers, 3-col skills table, boxed experience cards, visitor counter seeded from profile name. Chaos adds: Framer Motion marquee ("Welcome to [Name]'s TOTALLY RAD Homepage!!!"), blinking text via `<Blink>` wrapper, rainbow gradient avatar border, Windows 95 dialog boxes (`Win95Dialog`) for experience (navy title bar, `#c0c0c0` chrome, pixel-art buttons), `RainbowHr` dividers, tiled dot background, IE/Netscape footer warning |
+
+**Shared components:**
+- `PortfolioShell` — hosts `TemplateSelector` bar + `AnimatePresence` template switch; routes to all 5 via chained ternary
+- `TemplateSelector` — horizontal tab row with lock icons on unavailable templates; Export PDF + New CV buttons
+- `AvatarPicker` — shows extracted photo OR DiceBear SVG (`https://api.dicebear.com/9.x/{style}/svg?seed={name}`) with 4 style buttons (Adventurer / Lorelei / Micah / Notionists)
+- `UploadScreen` — drag-drop zone, orbit spinner with cycling words, timed `setTimeout` steps logged to PORTFOLIO monitor tag
+- `ComingSoonTemplate` — fallback for any future template not yet built
+- `Win95Dialog` — Windows 95 chrome component used by `NinetiesTemplate` chaos mode
+- `RainbowHr` — `linear-gradient` 4px hr used as section divider in chaos mode
+
+**Adding a new template:** add entry to `TEMPLATES` array with `available: true`, build `XxxTemplate({ profile })` component, add one arm to the chained ternary in `PortfolioShell`.
+
 ---
 
-## Already built (formerly "next features")
+## Already built
 
-- **Re-ranking with cross-encoder** — `services/reranker.py`, toggle in UI via `use_reranker` flag, fetches `top_k * 3` candidates
+- **Re-ranking with cross-encoder** — `services/reranker.py`, toggle via `use_reranker` flag, fetches `top_k * 3` candidates
 - **ReAct Agent Mode** — `services/agent.py` + `api/routes/agent.py`, 4 tools, MAX_ITERATIONS=7, full SSE streaming
+- **CV → Portfolio (all 5 templates)** — `services/portfolio_parser.py`, Basic / Creative / Dark / Old School / 90's all live with template picker; Fun ↔ Chaos toggle on 90's; green ↔ amber toggle on Dark
+- **AI Studio rebrand** — renamed from "RAG Assistant"; icon sidebar nav (desktop) + bottom tab bar (mobile); fully responsive layout
 
 ## Possible next features
 
+- **Portfolio AI Enhancement** — LLM-powered bullet rewriting, job description tailoring, and skill gap analysis per template style
 - **Agent memory / trace store** — persist agent reasoning traces to SQLite across sessions
-- **Structured tool calling** — replace regex-parsed ReAct output with OpenAI-compatible function calling for more reliable dispatch
-- **Chunking strategy performance comparison** — track which chunk strategy + retrieval strategy combo performs best
+- **Structured tool calling** — replace regex-parsed ReAct output with OpenAI-compatible function calling
+- **Chunking strategy performance comparison** — track chunk strategy + retrieval strategy combos in perf.db
 - **Non-text file ingestion** — CSV, URLs/web pages, YouTube transcripts, images (OCR)
 - **Chat history persistence** — save/load conversations
 - **Embedding model selection at upload time** — with re-index warning (currently hardcoded to `all-MiniLM-L6-v2`)

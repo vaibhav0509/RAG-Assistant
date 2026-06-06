@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Layers, ChevronDown, Database, Server, Globe, Zap,
@@ -346,56 +346,67 @@ const FEATURES = [
     icon: Search, color: "bg-brand-500", title: "4 Retrieval Strategies",
     desc: "Naive Dense, Hybrid BM25+Dense, HyDE, and Multi-Query with RRF merge.",
     tags: [{ label: "RAG Core", color: "bg-brand-50 text-brand-600" }],
+    proves: "Semantic search + relevance engineering",
   },
   {
     icon: Shuffle, color: "bg-purple-500", title: "4 Chunking Strategies",
     desc: "Recursive, Semantic (paragraph), Sentence Window, and Fixed-size chunking at upload time.",
     tags: [{ label: "Ingestion", color: "bg-purple-50 text-purple-600" }],
+    proves: "Document processing + ingestion pipeline design",
   },
   {
     icon: BarChart2, color: "bg-green-500", title: "Performance Analytics",
     desc: "Every query logs retrieval ms, LLM ms, avg relevance score, and chunks retrieved to SQLite.",
     tags: [{ label: "Observability", color: "bg-green-50 text-green-600" }],
+    proves: "Observability + performance instrumentation",
   },
   {
     icon: Terminal, color: "bg-gray-700", title: "Process Monitor",
     desc: "Real-time terminal sidebar showing every pipeline step with color-coded event tags and status dots.",
     tags: [{ label: "DevEx", color: "bg-gray-100 text-gray-600" }],
+    proves: "Full-stack event bus + React Context API",
   },
   {
     icon: Trophy, color: "bg-amber-500", title: "Quiz Game Mode",
     desc: "MCQ questions generated from documents, web search, and model knowledge. Streamed SSE setup with scoring.",
     tags: [{ label: "Game", color: "bg-amber-50 text-amber-600" }],
+    proves: "SSE streaming + game state management",
   },
   {
     icon: Globe, color: "bg-cyan-500", title: "Web Search Integration",
     desc: "DuckDuckGo (ddgs) fetches live sources and injects them alongside document context for richer questions.",
     tags: [{ label: "External", color: "bg-cyan-50 text-cyan-600" }],
+    proves: "External API integration + multi-source RAG",
   },
   {
-    icon: Cpu, color: "bg-orange-500", title: "100% Local LLM",
-    desc: "Ollama serves Granite 4.1 8B locally — all inference stays on-device, no API keys or quota limits.",
+    icon: Cpu, color: "bg-orange-500", title: "Local & Cloud LLM",
+    desc: "Ollama for on-device inference (Granite 4.1 8B) or Groq for cloud — same codebase, same API surface.",
     tags: [{ label: "Privacy", color: "bg-orange-50 text-orange-600" }],
+    proves: "Local + cloud LLM integration patterns",
   },
   {
     icon: Layers, color: "bg-pink-500", title: "Multi-Collection",
     desc: "Multiple ChromaDB collections let you separate document sets and switch context in one click.",
     tags: [{ label: "Multi-tenant", color: "bg-pink-50 text-pink-600" }],
+    proves: "Multi-tenant vector store design",
   },
   {
     icon: BrainCircuit, color: "bg-violet-500", title: "ReAct Agent Mode",
-    desc: "Autonomous reasoning loop — the agent thinks, picks a tool (docs / web / calculator), observes the result, and iterates up to 7 times before giving a final answer.",
+    desc: "Autonomous reasoning loop — the agent thinks, picks a tool (docs / web / calculator), observes the result, and iterates up to 7 times.",
     tags: [{ label: "Agent", color: "bg-violet-50 text-violet-600" }],
+    proves: "Agentic AI + ReAct + tool orchestration",
   },
   {
     icon: Search, color: "bg-rose-500", title: "Cross-Encoder Re-ranking",
-    desc: "Two-stage retrieval: fetch 3× candidates with dense search, then score every pair with ms-marco-MiniLM-L6-v2 to surface the most relevant chunks.",
+    desc: "Two-stage retrieval: fetch 3× candidates with dense search, then score every pair with ms-marco-MiniLM-L6-v2.",
     tags: [{ label: "Precision", color: "bg-rose-50 text-rose-600" }],
+    proves: "Two-stage retrieval + search precision",
   },
   {
     icon: FileText, color: "bg-lime-600", title: "CV → Portfolio Generator",
-    desc: "Upload a PDF resume — pdfplumber extracts text and embedded photos, the LLM parses it into structured JSON, and it renders an animated portfolio page with a DiceBear avatar.",
+    desc: "Upload a PDF resume — the LLM parses it into structured JSON and renders an animated portfolio page with avatar.",
     tags: [{ label: "LLM Parsing", color: "bg-lime-50 text-lime-700" }],
+    proves: "LLM document parsing + dynamic UI generation",
   },
 ];
 
@@ -424,6 +435,9 @@ function WhatWeBuilt() {
             <div className="flex flex-wrap gap-1 mt-2">
               {f.tags.map(t => <Tag key={t.label} color={t.color}>{t.label}</Tag>)}
             </div>
+            {f.proves && (
+              <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">↗ {f.proves}</p>
+            )}
           </motion.div>
         ))}
       </div>
@@ -649,62 +663,7 @@ function StrategyComparison() {
   );
 }
 
-// ─── 8. what this proves ──────────────────────────────────────────────────
-
-const PROOF_ITEMS = [
-  { icon: Brain,     color: "bg-brand-500",  skill: "Embedding & Semantic Search",
-    proves: "You understand how text becomes vectors, why cosine similarity works, and how to build a semantic retrieval layer from scratch." },
-  { icon: Database,  color: "bg-purple-500", skill: "Vector Database Design",
-    proves: "You can set up ChromaDB, manage collections, add metadata, and query with filters — knowledge directly applicable to Pinecone, Weaviate, Qdrant." },
-  { icon: Server,    color: "bg-green-500",  skill: "Production API Design",
-    proves: "FastAPI with auth middleware, streaming responses, async routes, Pydantic validation, and structured error handling." },
-  { icon: Zap,       color: "bg-amber-500",  skill: "Streaming Architecture",
-    proves: "You know why SSE exists, how async generators work in Python, and how ReadableStream parsing works in the browser." },
-  { icon: GitMerge,  color: "bg-orange-500", skill: "Search Relevance Engineering",
-    proves: "BM25 tuning, score normalisation, alpha blending, and RRF — the same techniques used at Google, Elastic, and Vespa." },
-  { icon: Cpu,       color: "bg-red-500",    skill: "Local LLM Integration",
-    proves: "Ollama setup, model switching, prompt engineering, hypothetical document generation, and managing LLM latency in a product." },
-  { icon: Code2,     color: "bg-sky-500",    skill: "Full-Stack TypeScript",
-    proves: "React hooks, context API as event bus, custom async generators, Framer Motion animations, and Tailwind design systems." },
-  { icon: Target,    color: "bg-pink-500",   skill: "Observability & Performance",
-    proves: "You instrument pipelines (retrieval ms, LLM ms, relevance scores), persist metrics to SQLite, and surface them in a live dashboard." },
-  { icon: BrainCircuit, color: "bg-violet-500", skill: "Agentic AI & ReAct Pattern",
-    proves: "You can implement an autonomous reasoning loop, parse structured LLM output with regex, integrate multiple tools, and stream intermediate reasoning steps to the UI in real time." },
-  { icon: FileText,     color: "bg-lime-600",   skill: "LLM-Powered Document Parsing",
-    proves: "You can extract structured data from unstructured PDFs using an LLM, handle edge cases (missing fields, embedded images), and render the result as a dynamic UI — a real-world data extraction pipeline." },
-];
-
-function ProofOfSkills() {
-  return (
-    <FadeIn className="mb-10">
-      <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Skills Map</div>
-      <h2 className="text-2xl font-black text-gray-900 mb-1">What This Project Proves You Know</h2>
-      <p className="text-gray-500 text-sm mb-6">Each feature maps directly to an in-demand engineering skill.</p>
-      <div className="grid sm:grid-cols-2 gap-3">
-        {PROOF_ITEMS.map((p, i) => (
-          <motion.div
-            key={p.skill}
-            initial={{ opacity: 0, x: i % 2 === 0 ? -12 : 12 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.06 }}
-            className="flex gap-3 bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
-          >
-            <div className={`${p.color} w-8 h-8 rounded-lg flex items-center justify-center shrink-0`}>
-              <p.icon size={15} className="text-white" />
-            </div>
-            <div>
-              <p className="font-bold text-gray-800 text-sm">{p.skill}</p>
-              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{p.proves}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </FadeIn>
-  );
-}
-
-// ─── 9. interview cheat sheet ─────────────────────────────────────────────
+// ─── 8. interview cheat sheet ─────────────────────────────────────────────
 
 const INTERVIEW_QA = [
   {
@@ -785,27 +744,37 @@ function InterviewPrep() {
   );
 }
 
-// ─── 10. tech stack ───────────────────────────────────────────────────────
+// ─── 9. stack & roadmap (merged) ─────────────────────────────────────────
 
 const STACK = [
-  { name: "FastAPI",                color: "bg-green-500",   why: "Async Python with auto OpenAPI docs, Pydantic validation, and native streaming support. Fastest Python web framework for I/O-bound workloads." },
-  { name: "ChromaDB",               color: "bg-purple-500",  why: "Embedded vector database — no separate server, persists to disk, supports metadata filtering. Great for development and small-to-medium production workloads." },
-  { name: "sentence-transformers",  color: "bg-pink-500",    why: "The gold-standard library for dense text embeddings. all-MiniLM-L6-v2 is fast (5ms/query), small (80MB), and performs well on semantic retrieval benchmarks." },
-  { name: "Ollama",                 color: "bg-orange-500",  why: "One-command local LLM serving with a clean OpenAI-compatible API. No GPU required for 8B models, handles model management, quantisation, and concurrency." },
-  { name: "rank-bm25",              color: "bg-red-500",     why: "Minimal, zero-dependency BM25 implementation. Used to score dense retrieval candidates for the hybrid strategy — no Elasticsearch overhead needed." },
-  { name: "React 18 + Vite",        color: "bg-blue-500",    why: "Concurrent rendering for streaming UI. Vite's HMR makes frontend development fast. framer-motion integrates cleanly for production animations." },
-  { name: "Framer Motion",          color: "bg-indigo-500",  why: "Declarative animation API that integrates with React's render cycle. AnimatePresence handles mount/unmount, whileInView handles scroll reveals." },
-  { name: "SQLite",                 color: "bg-amber-500",   why: "Zero-config persistent storage for game sessions and query performance logs. Enough for development; easy to swap to Postgres in production." },
-  { name: "ddgs (DuckDuckGo)",      color: "bg-cyan-500",    why: "The duckduckgo-search package was renamed to ddgs. Provides web search results without an API key — critical for the quiz game's web-source questions." },
+  { name: "FastAPI",               color: "bg-green-500",  why: "Async Python with auto OpenAPI docs, Pydantic validation, and native streaming support." },
+  { name: "ChromaDB",              color: "bg-purple-500", why: "Embedded vector DB — no separate server, persists to disk, supports metadata filtering." },
+  { name: "sentence-transformers", color: "bg-pink-500",   why: "all-MiniLM-L6-v2: fast (5ms/query), small (80MB), strong semantic retrieval performance." },
+  { name: "Ollama",                color: "bg-orange-500", why: "One-command local LLM serving with a clean OpenAI-compatible API. No GPU required for 8B." },
+  { name: "rank-bm25",             color: "bg-red-500",    why: "Minimal BM25 implementation for scoring dense retrieval candidates in hybrid strategy." },
+  { name: "React 18 + Vite",       color: "bg-blue-500",   why: "Concurrent rendering for streaming UI. Vite HMR + Framer Motion for production animations." },
+  { name: "SQLite",                color: "bg-amber-500",  why: "Zero-config persistent storage for game sessions + query performance logs." },
+  { name: "ddgs (DuckDuckGo)",     color: "bg-cyan-500",   why: "Web search without an API key — critical for quiz game's web-source questions." },
+  { name: "pdfplumber + DiceBear", color: "bg-lime-500",   why: "PDF text + photo extraction + illustrated avatars for the CV → Portfolio generator." },
 ];
 
-function TechStack() {
+const NEXT_ITEMS = [
+  { icon: Brain,        color: "text-violet-500", title: "Agent Memory & Trace Store",  desc: "Persist reasoning traces to SQLite across sessions — let the agent avoid redundant searches." },
+  { icon: Brain,        color: "text-pink-500",   title: "Embedding Model Selection",   desc: "Pick bge-small, e5-large, or nomic-embed-text at upload time with automatic re-index." },
+  { icon: FileText,     color: "text-blue-500",   title: "Multi-modal Ingestion",       desc: "URLs, CSV, YouTube transcripts, and images with OCR — beyond PDF/DOCX/TXT." },
+  { icon: BarChart2,    color: "text-green-500",  title: "Chunking × Strategy Matrix",  desc: "Track chunk + retrieval strategy combos in perf.db to find the optimal pairing per collection." },
+  { icon: BrainCircuit, color: "text-cyan-500",   title: "Structured Tool Calling",     desc: "Replace regex-parsed ReAct with OpenAI-compatible function calling for reliable dispatch." },
+  { icon: FileText,     color: "text-lime-600",   title: "Portfolio AI Enhancement",    desc: "LLM-powered bullet rewriting, job description tailoring, and skill gap analysis." },
+];
+
+function TechStackAndRoadmap() {
   return (
     <FadeIn className="mb-10">
-      <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Dependencies</div>
-      <h2 className="text-2xl font-black text-gray-900 mb-1">Tech Stack & Why</h2>
-      <p className="text-gray-500 text-sm mb-6">Every choice was deliberate — here's the reasoning you can explain.</p>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Stack & Roadmap</div>
+      <h2 className="text-2xl font-black text-gray-900 mb-1">Tech Stack & What's Next</h2>
+      <p className="text-gray-500 text-sm mb-6">Every dependency was deliberate — and six concrete improvements are queued.</p>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
         {STACK.map((s, i) => (
           <motion.div
             key={s.name}
@@ -823,28 +792,8 @@ function TechStack() {
           </motion.div>
         ))}
       </div>
-    </FadeIn>
-  );
-}
 
-// ─── 11. what's next ──────────────────────────────────────────────────────
-
-const NEXT_ITEMS = [
-  { icon: Brain,        color: "text-violet-500", title: "Agent Memory & Trace Store",  desc: "Persist agent reasoning traces to SQLite. Let the agent reference past tool calls and avoid redundant searches across sessions." },
-  { icon: Brain,        color: "text-pink-500",   title: "Embedding Model Selection",   desc: "Let users pick from bge-small, e5-large, or nomic-embed-text at upload time with automatic re-index on change." },
-  { icon: FileText,     color: "text-blue-500",   title: "Multi-modal Ingestion",       desc: "URLs (BeautifulSoup), CSV (pandas), YouTube transcripts (yt-dlp), and images with OCR (pytesseract)." },
-  { icon: BarChart2,    color: "text-green-500",  title: "Chunking × Strategy Matrix",  desc: "Track chunk strategy + retrieval strategy combinations in perf.db to find the optimal pairing per collection type." },
-  { icon: BookOpen,     color: "text-amber-500",  title: "Chat History Persistence",    desc: "Save conversations to SQLite with session IDs, exportable as JSON or markdown." },
-  { icon: BrainCircuit, color: "text-cyan-500",   title: "Structured Tool Calling",     desc: "Replace regex-parsed ReAct output with OpenAI-compatible function calling for more reliable tool dispatch and error recovery." },
-  { icon: FileText,     color: "text-lime-600",   title: "Portfolio AI Enhancement",    desc: "Add LLM-powered bullet rewriting, job description tailoring, and skill gap analysis to the CV → Portfolio generator." },
-];
-
-function WhatsNext() {
-  return (
-    <FadeIn className="mb-10">
-      <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Roadmap</div>
-      <h2 className="text-2xl font-black text-gray-900 mb-1">What's Next</h2>
-      <p className="text-gray-500 text-sm mb-6">Six concrete improvements ready to build — each adds a new talking point.</p>
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Roadmap</p>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {NEXT_ITEMS.map((n, i) => (
           <motion.div
@@ -865,34 +814,95 @@ function WhatsNext() {
   );
 }
 
+// ─── scrollspy TOC ────────────────────────────────────────────────────────
+
+const TOC = [
+  { id: "pipeline",   label: "RAG Pipeline"   },
+  { id: "arch",       label: "Architecture"   },
+  { id: "features",   label: "Features"       },
+  { id: "concepts",   label: "Concepts"       },
+  { id: "strategies", label: "Strategies"     },
+  { id: "interview",  label: "Interview Prep" },
+  { id: "stack",      label: "Stack & Roadmap"},
+];
+
 // ─── main ─────────────────────────────────────────────────────────────────
 
 export function Blueprint() {
-  return (
-    <div className="flex-1 overflow-y-auto bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <Hero />
-        <LiveMetrics />
-        <RAGPipeline />
-        <ArchDiagram />
-        <WhatWeBuilt />
-        <Concepts />
-        <StrategyComparison />
-        <ProofOfSkills />
-        <InterviewPrep />
-        <TechStack />
-        <WhatsNext />
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeId, setActiveId] = useState("");
 
-        <FadeIn>
-          <div className="text-center py-8 border-t border-gray-200">
-            <p className="text-xs text-gray-400 font-mono">
-              Built with Ollama / Groq · ChromaDB · FastAPI · React · sentence-transformers
-            </p>
-            <p className="text-xs text-gray-300 mt-1 font-mono">
-              Local mode: Ollama keeps all data on-device · Hosted mode: Groq cloud LLM, set <code className="text-brand-400">LLM_PROVIDER=groq</code> + <code className="text-brand-400">GROQ_API_KEY</code>
-            </p>
-          </div>
-        </FadeIn>
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    const sections = root.querySelectorAll("[data-section]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length > 0) setActiveId(visible[0].target.id);
+      },
+      { root, rootMargin: "0px 0px -75% 0px", threshold: 0.05 }
+    );
+    sections.forEach((s) => observer.observe(s));
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollTo = (id: string) => {
+    const el = scrollRef.current?.querySelector(`#${id}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <div className="flex-1 flex overflow-hidden">
+      {/* Main scrollable content */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <Hero />
+          <LiveMetrics />
+
+          <div id="pipeline" data-section><RAGPipeline /></div>
+          <div id="arch"     data-section><ArchDiagram /></div>
+          <div id="features" data-section><WhatWeBuilt /></div>
+          <div id="concepts" data-section><Concepts /></div>
+          <div id="strategies" data-section><StrategyComparison /></div>
+          <div id="interview"  data-section><InterviewPrep /></div>
+          <div id="stack"      data-section><TechStackAndRoadmap /></div>
+
+          <FadeIn>
+            <div className="text-center py-8 border-t border-gray-200">
+              <p className="text-xs text-gray-400 font-mono">
+                Built with Ollama / Groq · ChromaDB · FastAPI · React · sentence-transformers
+              </p>
+              <p className="text-xs text-gray-300 mt-1 font-mono">
+                Local: Ollama on-device · Cloud: set{" "}
+                <code className="text-brand-400">LLM_PROVIDER=groq</code> +{" "}
+                <code className="text-brand-400">GROQ_API_KEY</code>
+              </p>
+            </div>
+          </FadeIn>
+        </div>
+      </div>
+
+      {/* Sticky scrollspy sidebar — xl screens only */}
+      <div className="hidden xl:flex w-[168px] shrink-0 bg-white border-l border-gray-100 overflow-y-auto">
+        <div className="sticky top-0 p-4 w-full">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">On this page</p>
+          <nav className="space-y-0.5">
+            {TOC.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => scrollTo(s.id)}
+                className={`w-full text-left text-xs py-1.5 pl-3 border-l-2 transition-all duration-150 ${
+                  activeId === s.id
+                    ? "border-brand-500 text-brand-600 font-semibold bg-brand-50/50"
+                    : "border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </nav>
+        </div>
       </div>
     </div>
   );

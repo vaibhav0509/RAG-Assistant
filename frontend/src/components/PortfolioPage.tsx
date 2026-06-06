@@ -40,9 +40,9 @@ const TEMPLATES: {
 }[] = [
   { id: "basic",     label: "Basic",      tagline: "Clean & professional",  preview: "⬜", accent: "border-brand-400 bg-brand-50 text-brand-700",    available: true  },
   { id: "creative",  label: "Creative",   tagline: "Bold & full-bleed",     preview: "🎨", accent: "border-purple-400 bg-purple-50 text-purple-700",  available: true  },
-  { id: "dark",      label: "Dark",       tagline: "Terminal aesthetic",     preview: "🖤", accent: "border-gray-600 bg-gray-800 text-green-400",      available: false },
-  { id: "oldschool", label: "Old School", tagline: "1960s letterhead",       preview: "📜", accent: "border-amber-500 bg-amber-50 text-amber-800",     available: false },
-  { id: "nineties",  label: "90's",       tagline: "GeoCities nostalgia",   preview: "💾", accent: "border-teal-400 bg-teal-50 text-teal-700",        available: false },
+  { id: "dark",      label: "Dark",       tagline: "Terminal aesthetic",     preview: "🖤", accent: "border-gray-600 bg-gray-800 text-green-400",      available: true  },
+  { id: "oldschool", label: "Old School", tagline: "1960s letterhead",       preview: "📜", accent: "border-amber-500 bg-amber-50 text-amber-800",     available: true  },
+  { id: "nineties",  label: "90's",       tagline: "GeoCities nostalgia",   preview: "💾", accent: "border-teal-400 bg-teal-50 text-teal-700",        available: true  },
 ];
 
 // ─── Shared helpers ───────────────────────────────────────────────────────
@@ -738,6 +738,617 @@ function CreativeTemplate({ profile }: { profile: Profile }) {
   );
 }
 
+// ─── DARK template ───────────────────────────────────────────────────────
+
+function DarkTemplate({ profile }: { profile: Profile }) {
+  const [termColor, setTermColor] = useState<"green" | "amber">("green");
+  const [avatarStyle, setAvatarStyle] = useState("micah");
+
+  const C = termColor === "green"
+    ? { text: "#00ff41", mid: "#00cc33", dim: "#007020", border: "#1a3d1a", bg: "#0d0d0d" }
+    : { text: "#ffb000", mid: "#cc8800", dim: "#7a5200", border: "#3d2e00", bg: "#0c0900" };
+
+  const seed = profile.name || "user";
+
+  return (
+    <div className="flex-1 overflow-y-auto font-mono text-sm leading-6 relative" style={{ background: C.bg, color: C.text }}>
+      {/* CRT scanlines overlay */}
+      <div className="pointer-events-none fixed inset-0 z-10"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg,rgba(0,0,0,0.07) 0,rgba(0,0,0,0.07) 1px,transparent 1px,transparent 4px)" }} />
+
+      <div className="relative z-0 max-w-3xl mx-auto px-6 py-8">
+        {/* Color toggle */}
+        <div className="flex justify-end gap-4 mb-6">
+          <span style={{ color: C.dim }} className="text-xs self-center">terminal color:</span>
+          {(["green", "amber"] as const).map((c) => (
+            <button key={c} onClick={() => setTermColor(c)} className="flex items-center gap-1.5 text-xs"
+              style={{ color: c === termColor ? C.text : C.dim, opacity: c === termColor ? 1 : 0.45 }}>
+              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: c === "green" ? "#00ff41" : "#ffb000" }} />
+              {c}
+            </button>
+          ))}
+        </div>
+
+        {/* Boot text */}
+        <div className="mb-6 space-y-0.5 text-xs" style={{ color: C.dim }}>
+          <p>AI Studio Portfolio OS v1.0 — {new Date().toLocaleDateString()}</p>
+          <p>Parsed: {profile.source_filename || "resume.pdf"} — Status: [OK]</p>
+          <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 8, paddingTop: 8 }} />
+        </div>
+
+        {/* Identity + avatar */}
+        <div className="flex flex-col sm:flex-row gap-6 mb-8">
+          <div className="shrink-0">
+            <p className="text-xs mb-1" style={{ color: C.dim }}>┌── portrait ──┐</p>
+            <div style={{ border: `1px solid ${C.border}`, display: "inline-block" }}>
+              <div className="w-24 h-24 overflow-hidden">
+                {profile.photo
+                  ? <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" style={{ filter: "grayscale(40%) contrast(1.1)" }} />
+                  : <img src={dicebearUrl(avatarStyle, seed)} alt="avatar" className="w-full h-full" />}
+              </div>
+            </div>
+            <p className="text-xs mt-1" style={{ color: C.dim }}>└──────────────┘</p>
+            {!profile.photo && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {AVATAR_STYLES.map((s) => (
+                  <button key={s.id} onClick={() => setAvatarStyle(s.id)}
+                    style={{ fontSize: 9, color: avatarStyle === s.id ? C.text : C.dim, border: `1px solid ${avatarStyle === s.id ? C.text : C.border}`, padding: "1px 4px", background: "transparent", cursor: "pointer" }}>
+                    {s.label.slice(0, 3)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <p style={{ color: C.dim }}>$ whoami</p>
+            <p style={{ color: C.text }} className="text-2xl font-bold mt-1">{profile.name || "Unknown User"}</p>
+            {profile.title && <p style={{ color: C.mid }} className="mt-0.5">{profile.title}</p>}
+            <div className="mt-2 space-y-0.5 text-xs" style={{ color: C.dim }}>
+              {profile.location && <p>📍 {profile.location}</p>}
+              {profile.email    && <p>✉  <a href={`mailto:${profile.email}`} style={{ color: C.mid }} className="underline">{profile.email}</a></p>}
+              {profile.phone    && <p>☎  {profile.phone}</p>}
+            </div>
+            <div className="flex flex-wrap gap-3 mt-2">
+              {[
+                profile.linkedin && ["LinkedIn", profile.linkedin],
+                profile.github   && ["GitHub",   profile.github  ],
+                profile.website  && ["Website",  profile.website ],
+              ].filter(Boolean).map(([label, url]) => (
+                <a key={label as string} href={url as string} target="_blank" rel="noopener noreferrer"
+                  style={{ color: C.mid }} className="text-xs underline">[{label}]</a>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {profile.summary && (
+          <div className="mb-8">
+            <p style={{ color: C.dim }}>$ cat summary.txt</p>
+            <p className="pl-4 mt-1 leading-relaxed" style={{ color: C.mid, borderLeft: `2px solid ${C.border}` }}>
+              "{profile.summary}"
+            </p>
+          </div>
+        )}
+
+        {profile.skills?.length > 0 && (
+          <div className="mb-8">
+            <p style={{ color: C.dim }}>$ ls -1 ./skills/</p>
+            <div className="pl-4 mt-1 flex flex-wrap gap-x-6 gap-y-0.5">
+              {profile.skills.map((s) => <span key={s} style={{ color: C.text }}>▸ {s}</span>)}
+            </div>
+          </div>
+        )}
+
+        {profile.experience?.length > 0 && (
+          <div className="mb-8">
+            <p style={{ color: C.dim }}>$ cat experience.log</p>
+            <div className="pl-4 mt-2 space-y-6">
+              {profile.experience.map((exp, i) => (
+                <div key={i}>
+                  <p style={{ color: C.border }}>{'─'.repeat(44)}</p>
+                  <p style={{ color: C.text }} className="font-bold">
+                    [{exp.start}{exp.end ? ` → ${exp.end}` : " → Present"}] {exp.role}
+                  </p>
+                  <p style={{ color: C.mid }}>@ {exp.company}{exp.location ? ` · ${exp.location}` : ""}</p>
+                  {exp.bullets?.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {exp.bullets.map((b, j) => (
+                        <li key={j} className="flex gap-2" style={{ color: C.mid }}>
+                          <span style={{ color: C.dim }}>  ├─</span>{b}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+              <p style={{ color: C.border }}>{'─'.repeat(44)}</p>
+            </div>
+          </div>
+        )}
+
+        {profile.projects?.length > 0 && (
+          <div className="mb-8">
+            <p style={{ color: C.dim }}>$ ls -la ./projects/</p>
+            <div className="pl-4 mt-2 space-y-3">
+              {profile.projects.map((p, i) => (
+                <div key={i}>
+                  <div className="flex items-center gap-2">
+                    <span style={{ color: C.dim }}>drwxr-xr-x</span>
+                    <span style={{ color: C.text }} className="font-bold">{p.name}/</span>
+                    {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: C.dim }} className="text-xs underline">[open ↗]</a>}
+                  </div>
+                  <p className="pl-10 text-xs" style={{ color: C.dim }}>{p.description}</p>
+                  {p.tech?.length > 0 && <p className="pl-10 text-xs" style={{ color: C.dim }}>[{p.tech.join(" · ")}]</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {profile.education?.length > 0 && (
+          <div className="mb-8">
+            <p style={{ color: C.dim }}>$ cat education.txt</p>
+            <div className="pl-4 mt-2 space-y-3">
+              {profile.education.map((ed, i) => (
+                <div key={i}>
+                  <p style={{ color: C.text }} className="font-bold">{ed.institution}</p>
+                  <p style={{ color: C.mid }}>{ed.degree}{ed.field ? ` in ${ed.field}` : ""}</p>
+                  <p className="text-xs" style={{ color: C.dim }}>
+                    {ed.start}{ed.end ? ` – ${ed.end}` : ""}{ed.grade ? ` · Grade: ${ed.grade}` : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {profile.certifications?.length > 0 && (
+          <div className="mb-8">
+            <p style={{ color: C.dim }}>$ cat certifications.txt</p>
+            <div className="pl-4 mt-1 space-y-0.5">
+              {profile.certifications.map((c, i) => <p key={i} style={{ color: C.mid }}>✓ {c}</p>)}
+            </div>
+          </div>
+        )}
+
+        {/* Blinking cursor */}
+        <div className="flex items-center gap-1 mt-6" style={{ color: C.dim }}>
+          <span>$</span>
+          <motion.span style={{ color: C.text }} animate={{ opacity: [1, 0, 1] }} transition={{ duration: 1.2, repeat: Infinity }}>▌</motion.span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── OLD SCHOOL template ──────────────────────────────────────────────────
+
+const OLD_SCHOOL_PARTS = [
+  "PART ONE", "PART TWO", "PART THREE", "PART FOUR",
+  "PART FIVE", "PART SIX", "PART SEVEN", "PART EIGHT",
+];
+
+function OldSchoolTemplate({ profile }: { profile: Profile }) {
+  const serif: React.CSSProperties = { fontFamily: "Georgia, 'Times New Roman', serif" };
+  const brown     = "#3d2b0a";
+  const midBrown  = "#5c4a1e";
+  const lightBrown = "#7a6030";
+  const rule      = "#c4a46b";
+  const parchment = "#f5f0e8";
+
+  const Rule = () => (
+    <div style={{ color: midBrown, textAlign: "center", letterSpacing: 3, margin: "14px 0", ...serif }}>
+      ══════════════════════════════════════
+    </div>
+  );
+
+  let partIdx = 0;
+
+  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div style={{ marginBottom: 36 }}>
+      <p style={{ ...serif, color: brown, fontWeight: "bold", fontSize: 12, letterSpacing: 3, textTransform: "uppercase" as const, borderBottom: `1px solid ${rule}`, paddingBottom: 4, marginBottom: 16 }}>
+        {OLD_SCHOOL_PARTS[partIdx++] ?? "PART"}: {title}
+      </p>
+      {children}
+    </div>
+  );
+
+  return (
+    <div className="flex-1 overflow-y-auto" style={{ background: parchment, ...serif }}>
+      <div style={{ maxWidth: 700, margin: "0 auto", padding: "48px 48px 72px" }}>
+
+        {/* Letterhead */}
+        <div style={{ textAlign: "center", marginBottom: 8 }}>
+          <Rule />
+          <h1 style={{ color: brown, fontSize: 30, fontWeight: "bold", letterSpacing: 6, textTransform: "uppercase", margin: "16px 0 4px" }}>
+            {profile.name || "Your Name"}
+          </h1>
+          {profile.title && (
+            <p style={{ color: midBrown, fontSize: 13, letterSpacing: 4, textTransform: "uppercase" }}>{profile.title}</p>
+          )}
+          <p style={{ color: lightBrown, fontSize: 12, marginTop: 12, lineHeight: 1.9 }}>
+            {[profile.location, profile.email, profile.phone].filter(Boolean).join("  ·  ")}
+          </p>
+          <p style={{ color: lightBrown, fontSize: 12 }}>
+            {[profile.linkedin && "LinkedIn", profile.github && "GitHub", profile.website && "Website"].filter(Boolean).join("  ·  ")}
+          </p>
+          <Rule />
+          <div style={{ color: midBrown, fontSize: 24, margin: "6px 0" }}>❦</div>
+          <Rule />
+        </div>
+
+        <div style={{ marginTop: 40 }}>
+          {profile.summary && (
+            <Section title="PROFESSIONAL SUMMARY">
+              <p style={{ color: lightBrown, lineHeight: 1.9, fontStyle: "italic", fontSize: 15 }}>
+                "{profile.summary}"
+              </p>
+            </Section>
+          )}
+
+          {profile.experience?.length > 0 && (
+            <Section title="PROFESSIONAL EXPERIENCE">
+              {profile.experience.map((exp, i) => (
+                <div key={i} style={{ marginBottom: 22 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
+                    <span style={{ color: brown, fontWeight: "bold", fontSize: 15 }}>{exp.company}</span>
+                    <span style={{ color: lightBrown, fontSize: 12 }}>{exp.start}{exp.end ? ` – ${exp.end}` : " – Present"}</span>
+                  </div>
+                  <p style={{ color: midBrown, fontStyle: "italic", marginBottom: 8 }}>
+                    {exp.role}{exp.location ? `, ${exp.location}` : ""}
+                  </p>
+                  {exp.bullets?.length > 0 && (
+                    <ul style={{ color: lightBrown, lineHeight: 1.9, paddingLeft: 0, listStyle: "none" }}>
+                      {exp.bullets.map((b, j) => (
+                        <li key={j} style={{ display: "flex", gap: 10 }}>
+                          <span style={{ color: midBrown }}>—</span>{b}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </Section>
+          )}
+
+          {profile.skills?.length > 0 && (
+            <Section title="TECHNICAL PROFICIENCIES">
+              <p style={{ color: lightBrown, lineHeight: 2.1 }}>{profile.skills.join("  ·  ")}</p>
+            </Section>
+          )}
+
+          {profile.education?.length > 0 && (
+            <Section title="ACADEMIC CREDENTIALS">
+              {profile.education.map((ed, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                  <div>
+                    <p style={{ color: brown, fontWeight: "bold" }}>{ed.institution}</p>
+                    <p style={{ color: lightBrown, fontStyle: "italic", fontSize: 14 }}>
+                      {ed.degree}{ed.field ? `, ${ed.field}` : ""}
+                    </p>
+                    {ed.grade && <p style={{ color: lightBrown, fontSize: 12 }}>Grade: {ed.grade}</p>}
+                  </div>
+                  <span style={{ color: lightBrown, fontSize: 12 }}>{ed.start}{ed.end ? ` – ${ed.end}` : ""}</span>
+                </div>
+              ))}
+            </Section>
+          )}
+
+          {profile.projects?.length > 0 && (
+            <Section title="NOTABLE PROJECTS">
+              {profile.projects.map((p, i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                    <span style={{ color: brown, fontWeight: "bold" }}>{p.name}</span>
+                    {p.url && (
+                      <a href={p.url} target="_blank" rel="noopener noreferrer"
+                        style={{ color: lightBrown, fontSize: 12 }}>
+                        [{p.url.replace(/^https?:\/\//, "").slice(0, 32)}]
+                      </a>
+                    )}
+                  </div>
+                  <p style={{ color: lightBrown, lineHeight: 1.8, fontSize: 14 }}>{p.description}</p>
+                  {p.tech?.length > 0 && (
+                    <p style={{ color: midBrown, fontSize: 12, fontStyle: "italic" }}>Employing: {p.tech.join(", ")}</p>
+                  )}
+                </div>
+              ))}
+            </Section>
+          )}
+
+          {profile.certifications?.length > 0 && (
+            <Section title="AWARDS & CERTIFICATIONS">
+              {profile.certifications.map((c, i) => (
+                <p key={i} style={{ color: lightBrown, display: "flex", gap: 10, lineHeight: 1.9 }}>
+                  <span style={{ color: midBrown }}>✦</span>{c}
+                </p>
+              ))}
+            </Section>
+          )}
+        </div>
+
+        {/* Closing */}
+        <Rule />
+        <div style={{ marginTop: 32 }}>
+          <p style={{ color: lightBrown, fontStyle: "italic", marginBottom: 32 }}>Yours faithfully,</p>
+          <p style={{ color: brown, fontWeight: "bold", fontSize: 18 }}>{profile.name}</p>
+          {profile.title && <p style={{ color: midBrown, fontStyle: "italic" }}>{profile.title}</p>}
+        </div>
+        {profile.languages?.length > 0 && (
+          <p style={{ color: lightBrown, fontSize: 12, marginTop: 24, borderTop: `1px solid ${rule}`, paddingTop: 16 }}>
+            Languages: {profile.languages.join(", ")}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── NINETIES template ────────────────────────────────────────────────────
+
+function Win95Dialog({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ border: "2px solid #808080", boxShadow: "2px 2px 0 #000", marginBottom: 8 }}>
+      <div style={{ background: "#000080", color: "#fff", padding: "2px 6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 12, fontWeight: "bold", fontFamily: "'Comic Sans MS', cursive" }}>📁 {title}</span>
+        <div style={{ display: "flex", gap: 2 }}>
+          {["_", "□", "×"].map((c) => (
+            <span key={c} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 14, background: "#c0c0c0", color: "#000", fontSize: 10, fontWeight: "bold", border: "1px solid", borderColor: "#ffffff #808080 #808080 #ffffff", cursor: "default" }}>{c}</span>
+          ))}
+        </div>
+      </div>
+      <div style={{ background: "#c0c0c0", padding: 10, fontFamily: "'Comic Sans MS', cursive", fontSize: 12 }}>{children}</div>
+    </div>
+  );
+}
+
+function RainbowHr() {
+  return <div style={{ height: 4, background: "linear-gradient(90deg,#ff0000,#ff8800,#ffff00,#00ff00,#0000ff,#8800ff)", margin: "14px 0" }} />;
+}
+
+function NinetiesTemplate({ profile }: { profile: Profile }) {
+  const [mode, setMode]           = useState<"fun" | "chaos">("fun");
+  const [avatarStyle, setAvatarStyle] = useState("adventurer");
+  const isChaos = mode === "chaos";
+
+  const comicSans: React.CSSProperties = { fontFamily: "'Comic Sans MS', 'Comic Sans', cursive, sans-serif" };
+
+  const visitorNum = String(
+    ((profile.name || "user").split("").reduce((a, c) => a + c.charCodeAt(0), 4721) % 99000) + 1000
+  ).padStart(6, "0");
+
+  const Blink = ({ children }: { children: React.ReactNode }) =>
+    isChaos
+      ? <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.7, repeat: Infinity }}>{children}</motion.span>
+      : <span>{children}</span>;
+
+  const SectionHead = ({ emoji, title }: { emoji: string; title: string }) => (
+    <h2 style={{ color: isChaos ? "#ff00ff" : "#0000aa", fontSize: 20, fontWeight: "bold", textDecoration: "underline", marginBottom: 10, ...comicSans }}>
+      {isChaos ? `${emoji} ` : ""}{title}{isChaos ? ` ${emoji}` : ""}
+    </h2>
+  );
+
+  const Divider = () => isChaos ? <RainbowHr /> : <hr style={{ borderColor: "#0000aa", margin: "16px 0" }} />;
+
+  const seed = profile.name || "user";
+
+  return (
+    <div className="flex-1 overflow-y-auto" style={{
+      ...comicSans,
+      backgroundColor: "#fffef0",
+      ...(isChaos ? { backgroundImage: "radial-gradient(circle,#ff00ff0a 2px,transparent 2px)", backgroundSize: "20px 20px" } : {}),
+    }}>
+      {/* Header banner */}
+      <div style={{ background: isChaos ? "linear-gradient(135deg,#ff00ff,#0000cc,#00ccff)" : "#0000aa", padding: "20px 16px", textAlign: "center", color: "#fff", position: "relative" }}>
+        {/* Mode toggle */}
+        <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4 }}>
+          {(["fun", "chaos"] as const).map((m) => (
+            <button key={m} onClick={() => setMode(m)}
+              style={{ ...comicSans, fontSize: 11, padding: "2px 8px", cursor: "pointer", background: mode === m ? "#ffff00" : "#c0c0c0", color: "#000", border: "2px solid", borderColor: "#fff #808080 #808080 #fff" }}>
+              {m === "fun" ? "😎 Fun" : "🤪 Chaos"}
+            </button>
+          ))}
+        </div>
+
+        {/* Marquee in chaos */}
+        {isChaos && (
+          <div style={{ overflow: "hidden", whiteSpace: "nowrap", marginBottom: 8, height: 20 }}>
+            <motion.span
+              animate={{ x: ["80vw", "-100%"] }}
+              transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
+              style={{ display: "inline-block", color: "#ffff00", fontSize: 13, fontWeight: "bold" }}>
+              ✨🌟 Welcome to {profile.name || "My"}'s TOTALLY RAD Homepage!!! 🌟✨ &nbsp;&nbsp;&nbsp; 🚧 Under Construction 🚧 &nbsp;&nbsp;&nbsp; Best viewed in Netscape Navigator 4.0 at 800×600 &nbsp;&nbsp;&nbsp;
+            </motion.span>
+          </div>
+        )}
+
+        {/* Avatar */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+          {isChaos ? (
+            <div style={{ padding: 4, borderRadius: "50%", background: "linear-gradient(90deg,#ff0000,#ffff00,#00ff00,#0000ff,#ff00ff)" }}>
+              <div style={{ borderRadius: "50%", overflow: "hidden", width: 88, height: 88, background: "#fff" }}>
+                {profile.photo
+                  ? <img src={profile.photo} alt={profile.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <img src={dicebearUrl(avatarStyle, seed)} alt="avatar" style={{ width: "100%", height: "100%" }} />}
+              </div>
+            </div>
+          ) : (
+            <div style={{ width: 88, height: 88, borderRadius: "50%", overflow: "hidden", border: "4px solid #ffff00" }}>
+              {profile.photo
+                ? <img src={profile.photo} alt={profile.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <img src={dicebearUrl(avatarStyle, seed)} alt="avatar" style={{ width: "100%", height: "100%" }} />}
+            </div>
+          )}
+        </div>
+
+        <h1 style={{ fontSize: isChaos ? 30 : 24, fontWeight: "bold", color: isChaos ? "#ffff00" : "#fff", textShadow: isChaos ? "2px 2px 0 #ff00ff,-2px -2px 0 #00ffff" : "2px 2px 0 #000080", margin: "6px 0 2px" }}>
+          <Blink>{profile.name || "Your Name"}</Blink>
+        </h1>
+        {profile.title && <p style={{ color: "#00ffff", fontSize: 13 }}>{profile.title}</p>}
+
+        <div style={{ color: "#fff", fontSize: 12, marginTop: 8, lineHeight: 1.9 }}>
+          {profile.location && <span>📍 {profile.location}&nbsp;&nbsp;</span>}
+          {profile.email && <a href={`mailto:${profile.email}`} style={{ color: "#ffff00" }}>{profile.email}</a>}
+          {profile.phone && <span>&nbsp;&nbsp;📞 {profile.phone}</span>}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+          {[profile.linkedin && ["🔗 LinkedIn", profile.linkedin], profile.github && ["💻 GitHub", profile.github], profile.website && ["🌐 Website", profile.website]]
+            .filter(Boolean).map(([label, url]) => (
+              <a key={label as string} href={url as string} target="_blank" rel="noopener noreferrer"
+                style={{ color: "#ffff00", fontSize: 12, textDecoration: "underline" }}>{label}</a>
+            ))}
+        </div>
+
+        <div style={{ marginTop: 12, display: "inline-block", background: "#000", color: "#00ff00", padding: "3px 12px", fontSize: 12, border: "2px inset #808080", fontFamily: "monospace" }}>
+          👁 You are visitor #{visitorNum}
+        </div>
+      </div>
+
+      {/* Avatar style picker */}
+      {!profile.photo && (
+        <div style={{ textAlign: "center", padding: "6px", background: "#eeeeee", borderBottom: "2px solid #c0c0c0", ...comicSans }}>
+          <span style={{ fontSize: 11 }}>Avatar: </span>
+          {AVATAR_STYLES.map((s) => (
+            <button key={s.id} onClick={() => setAvatarStyle(s.id)}
+              style={{ marginLeft: 4, fontSize: 11, cursor: "pointer", ...comicSans, padding: "1px 6px", background: avatarStyle === s.id ? "#0000ff" : "#c0c0c0", color: avatarStyle === s.id ? "#fff" : "#000", border: "2px solid", borderColor: "#fff #808080 #808080 #fff" }}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Body */}
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: "24px 24px 56px", ...comicSans }}>
+        {isChaos && (
+          <p style={{ textAlign: "center", fontWeight: "bold", margin: "8px 0" }}>
+            🚧 <Blink>THIS PAGE IS UNDER CONSTRUCTION</Blink> 🚧
+          </p>
+        )}
+        <Divider />
+
+        {profile.summary && (
+          <div style={{ marginBottom: 20 }}>
+            <SectionHead emoji="💬" title="ABOUT ME" />
+            <p style={{ color: "#333", lineHeight: 1.8, background: isChaos ? "#ffffcc" : "transparent", padding: isChaos ? "8px 12px" : 0, border: isChaos ? "1px dashed #ffaa00" : "none" }}>
+              {profile.summary}
+            </p>
+            <Divider />
+          </div>
+        )}
+
+        {profile.skills?.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <SectionHead emoji="💥" title="MY SKILLS" />
+            <table style={{ borderCollapse: "collapse", width: "100%" }}>
+              <tbody>
+                {Array.from({ length: Math.ceil(profile.skills.length / 3) }).map((_, row) => (
+                  <tr key={row}>
+                    {profile.skills.slice(row * 3, row * 3 + 3).map((skill, col) => (
+                      <td key={col} style={{ border: `2px solid ${isChaos ? "#0000ff" : "#0000aa"}`, padding: "4px 8px", background: isChaos ? (["#ffccff", "#ccffcc", "#ccccff"])[col % 3] : "#eeeeff", fontSize: 13 }}>
+                        {isChaos ? "⭐ " : "• "}{skill}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Divider />
+          </div>
+        )}
+
+        {profile.experience?.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <SectionHead emoji="🏆" title="WORK EXPERIENCE" />
+            {isChaos ? (
+              <div>
+                {profile.experience.map((exp, i) => (
+                  <Win95Dialog key={i} title={`${exp.role} @ ${exp.company}`}>
+                    <p style={{ fontWeight: "bold", marginBottom: 4 }}>{exp.role} — {exp.company}{exp.location ? ` (${exp.location})` : ""}</p>
+                    <p style={{ color: "#000080", marginBottom: 6 }}>{exp.start}{exp.end ? ` – ${exp.end}` : " – Present"}</p>
+                    {exp.bullets?.length > 0 && (
+                      <ul style={{ listStyle: "disc", paddingLeft: 18 }}>
+                        {exp.bullets.map((b, j) => <li key={j} style={{ marginBottom: 2 }}>{b}</li>)}
+                      </ul>
+                    )}
+                  </Win95Dialog>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {profile.experience.map((exp, i) => (
+                  <div key={i} style={{ border: "2px solid #0000aa", padding: 12, background: "#eeeeff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                      <strong style={{ color: "#0000aa" }}>{exp.role} @ {exp.company}</strong>
+                      <span style={{ fontSize: 12, color: "#666" }}>{exp.start}{exp.end ? ` – ${exp.end}` : " – Present"}</span>
+                    </div>
+                    {exp.location && <p style={{ fontSize: 12, color: "#666" }}>{exp.location}</p>}
+                    {exp.bullets?.length > 0 && (
+                      <ul style={{ marginTop: 8, paddingLeft: 20, listStyle: "disc" }}>
+                        {exp.bullets.map((b, j) => <li key={j} style={{ fontSize: 13, lineHeight: 1.7 }}>{b}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <Divider />
+          </div>
+        )}
+
+        {profile.projects?.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <SectionHead emoji="🚀" title="MY PROJECTS" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8 }}>
+              {profile.projects.map((p, i) => (
+                <div key={i} style={{ border: `2px solid ${isChaos ? (["#ff00ff","#0000ff","#00aaff"])[i%3] : "#0000aa"}`, padding: 10, background: isChaos ? (["#fff0ff","#f0f0ff","#f0faff"])[i%3] : "#eeeeff" }}>
+                  <p style={{ fontWeight: "bold", color: "#0000aa", marginBottom: 4 }}>{isChaos ? "🔥 " : ""}{p.name}</p>
+                  <p style={{ fontSize: 12, lineHeight: 1.6 }}>{p.description}</p>
+                  {p.tech?.length > 0 && <p style={{ fontSize: 11, color: "#666", marginTop: 4 }}>[{p.tech.join(", ")}]</p>}
+                  {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#0000ff", textDecoration: "underline" }}>🔗 Click here!</a>}
+                </div>
+              ))}
+            </div>
+            <Divider />
+          </div>
+        )}
+
+        {profile.education?.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <SectionHead emoji="🎓" title="EDUCATION" />
+            {profile.education.map((ed, i) => (
+              <div key={i} style={{ marginBottom: 12 }}>
+                <strong style={{ color: "#0000aa" }}>{ed.institution}</strong><br />
+                <span style={{ fontSize: 13 }}>{ed.degree}{ed.field ? ` in ${ed.field}` : ""}</span>
+                <span style={{ fontSize: 12, color: "#666" }}> · {ed.start}{ed.end ? `–${ed.end}` : ""}</span>
+                {ed.grade && <span style={{ fontSize: 12, color: "#666" }}> · {ed.grade}</span>}
+              </div>
+            ))}
+            <Divider />
+          </div>
+        )}
+
+        {profile.certifications?.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <SectionHead emoji="🏅" title="AWARDS & CERTS" />
+            {profile.certifications.map((c, i) => (
+              <p key={i} style={{ marginBottom: 4 }}>{isChaos ? "⭐ " : "🏆 "}{c}</p>
+            ))}
+            <Divider />
+          </div>
+        )}
+
+        <div style={{ textAlign: "center", fontSize: 11, color: "#666", marginTop: 24 }}>
+          <p>Made with 💜 · <Blink>Best viewed at 800×600 resolution</Blink></p>
+          {isChaos && <p style={{ marginTop: 4 }}>⚠️ Requires Netscape Navigator 4.0 or Internet Explorer 5.0 ⚠️</p>}
+          {profile.languages?.length > 0 && <p style={{ marginTop: 6 }}>Languages: {profile.languages.join(" · ")}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Portfolio shell (selector + active template) ─────────────────────────
 
 function PortfolioShell({ profile, onReset }: { profile: Profile; onReset: () => void }) {
@@ -763,17 +1374,12 @@ function PortfolioShell({ profile, onReset }: { profile: Profile; onReset: () =>
           transition={{ duration: 0.25 }}
           className="flex-1 flex overflow-hidden"
         >
-          {activeTemplate === "basic" ? (
-            <BasicTemplate profile={profile} />
-          ) : activeTemplate === "creative" ? (
-            <CreativeTemplate profile={profile} />
-          ) : (
-            <ComingSoonTemplate
-              label={current.label}
-              tagline={current.tagline}
-              preview={current.preview}
-            />
-          )}
+          {activeTemplate === "basic"     ? <BasicTemplate     profile={profile} /> :
+           activeTemplate === "creative"  ? <CreativeTemplate  profile={profile} /> :
+           activeTemplate === "dark"      ? <DarkTemplate      profile={profile} /> :
+           activeTemplate === "oldschool" ? <OldSchoolTemplate profile={profile} /> :
+           activeTemplate === "nineties"  ? <NinetiesTemplate  profile={profile} /> :
+           <ComingSoonTemplate label={current.label} tagline={current.tagline} preview={current.preview} />}
         </motion.div>
       </AnimatePresence>
 
