@@ -6,12 +6,27 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - OLLAMA_MODEL=qwen3.5:latest
+      - PORT=8000
       - CHROMA_PERSIST_DIR=/data/chroma
-      - API_KEY=enterprise-rag-secret
+      - SQLITE_DIR=/data/sqlite
+      # LLM provider: set to "groq" and supply GROQ_API_KEY for cloud inference
+      # Default is "ollama" — requires Ollama running on the host
+      - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-granite4.1:8b}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - API_KEY=${API_KEY:-enterprise-rag-secret}
+      - EMBEDDING_MODEL=all-MiniLM-L6-v2
     volumes:
       - chroma_data:/data/chroma
+      - sqlite_data:/data/sqlite
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s  # model weights load on first start
     restart: unless-stopped
 
   frontend:
@@ -19,8 +34,15 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     restart: unless-stopped
 
 volumes:
   chroma_data:
+  sqlite_data:

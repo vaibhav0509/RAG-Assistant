@@ -4,7 +4,7 @@
 
 # AI Studio
 
-**A full-stack local AI workspace — five tools, one codebase, zero cloud dependencies.**
+**A full-stack local AI workspace — six tools, one codebase, zero cloud dependencies.**
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-rag--assistant--pro.vercel.app-6366f1?style=for-the-badge&logo=vercel&logoColor=white)](https://rag-assistant-pro.vercel.app/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -21,7 +21,9 @@
 
 ## What is this?
 
-AI Studio started as a RAG chatbot and grew into a five-tool AI playground — all running locally with Ollama or in the cloud with Groq, using the same codebase. No OpenAI. No API bills. No data leaving your machine (unless you want it to).
+AI Studio started as a RAG chatbot and grew into a six-tool AI playground — all running locally with Ollama or in the cloud with Groq, using the same codebase. No OpenAI. No API bills. No data leaving your machine (unless you want it to).
+
+Open the app and a welcome screen explains every tool and when to use it — no need to read docs before you start.
 
 ```
 Upload your documents → ask anything → watch the pipeline work in real time
@@ -31,7 +33,10 @@ It's both a functional AI toolkit and a showcase of production-grade AI/ML engin
 
 ---
 
-## 🛠️ Five Tools in One
+## 🛠️ Seven Panels in One
+
+### 🏠 Welcome Home
+Opens by default. Explains every tool with feature cards, a 3-step quick start, and a backend troubleshooting hint. No need to read Blueprint first.
 
 ### 💬 RAG Chat
 Upload documents and chat with them. Four retrieval strategies, four chunking strategies, cross-encoder re-ranking, and a real-time process monitor showing every pipeline step.
@@ -45,8 +50,11 @@ Pick any topic → the model suggests subtopics → generates MCQ questions from
 ### 📄 CV → Portfolio
 Upload a PDF resume → the LLM parses it into structured JSON → renders it as a beautiful animated portfolio page. Five visual templates to choose from.
 
+### 🧪 RAG Evaluation
+Paste in a list of questions, pick a retrieval strategy, hit Run — and get three quantitative metrics per question: **context relevance** (cosine similarity of retrieved chunks), **answer faithfulness** (LLM judge), and **answer relevance** (embedding similarity). Aggregate bars show overall pipeline quality.
+
 ### 📐 Blueprint
-An interactive docs page explaining every architectural decision — with live system metrics, pipeline diagrams, concept explainers, retrieval strategy comparisons, and an interview cheat sheet.
+An interactive docs page explaining every architectural decision — with a **Setup Guide** section (prerequisites, Docker + local dev commands, env vars table), live system metrics, pipeline diagrams, concept explainers, retrieval strategy comparisons, and an interview cheat sheet.
 
 ---
 
@@ -58,12 +66,14 @@ An interactive docs page explaining every architectural decision — with live s
 | **4 Chunking Strategies** | Recursive · Semantic · Sentence Window · Fixed Size |
 | **Cross-Encoder Re-ranking** | Two-stage retrieval with `ms-marco-MiniLM-L6-v2` |
 | **ReAct Agent** | 4 tools: ChromaDB · DuckDuckGo · Calculator · Direct Answer |
+| **RAG Evaluation** | 3 metrics: context relevance · faithfulness (LLM judge) · answer relevance |
 | **SSE Streaming** | Every response streams token-by-token with live progress |
 | **Process Monitor** | Real-time terminal sidebar — color-coded pipeline events |
 | **Performance Analytics** | Every query logged: retrieval ms · LLM ms · relevance score |
 | **5 Portfolio Templates** | Basic · Creative · Dark/Terminal · Old School · 90's GeoCities |
 | **Local + Cloud LLM** | Ollama on-device or Groq cloud — same API surface |
 | **Fully Responsive** | Icon sidebar on desktop · bottom tab bar on mobile |
+| **39 pytest tests** | Chunking strategies · retrieval helpers · API endpoints with mocked services |
 
 ---
 
@@ -84,7 +94,7 @@ An interactive docs page explaining every architectural decision — with live s
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                    Browser (React 18 + Vite)              │
-│  IconNav │ Chat │ Agent │ Quiz │ Portfolio │ Blueprint    │
+│  IconNav │ Home │ Chat │ Agent │ Quiz │ Portfolio │ Eval │    │
 │          │          SSE Streaming ←→                      │
 └──────────────────────────┬───────────────────────────────┘
                            │ /api/v1/* (X-API-Key)
@@ -117,19 +127,37 @@ Multi-Query    → 3 phrasings → RRF merge          [best recall, 4× latency]
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Option A — Docker (easiest)
+
+```bash
+git clone https://github.com/yourusername/RAG-Assistant.git
+cd RAG-Assistant
+
+# With local Ollama running on your machine:
+docker compose up --build
+
+# Or with Groq (no GPU, no Ollama needed):
+LLM_PROVIDER=groq GROQ_API_KEY=gsk_... docker compose up --build
+```
+
+- Frontend → http://localhost:3000
+- Backend API → http://localhost:8000
+
+### Option B — Local dev
+
+#### Prerequisites
 - Python 3.11+
 - Node.js 18+
 - [Ollama](https://ollama.com/) installed and running
 
-### 1. Clone
+#### 1. Clone
 
 ```bash
 git clone https://github.com/yourusername/RAG-Assistant.git
 cd RAG-Assistant
 ```
 
-### 2. Backend
+#### 2. Backend
 
 ```bash
 cd backend
@@ -137,16 +165,16 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 
 # Pull a model
-ollama pull granite4.1:8b   # or any model you prefer
+ollama pull granite4.1:8b
 
 # Configure
-cp .env.example .env        # set OLLAMA_MODEL, API_KEY, etc.
+cp .env.example .env
 
 # Start
 .venv/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 3. Frontend
+#### 3. Frontend
 
 ```bash
 cd frontend
@@ -155,7 +183,7 @@ npm run dev
 # → http://localhost:5173
 ```
 
-### 4. (Optional) Use Groq instead of Ollama
+#### 4. (Optional) Groq instead of Ollama
 
 ```bash
 # In backend/.env
@@ -164,7 +192,14 @@ GROQ_API_KEY=your_key_here
 GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
-No other changes needed — the same routes work for both providers.
+### Running Tests
+
+```bash
+cd backend
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest tests/ -v
+# → 39 tests, ~2 seconds, no model downloads needed
+```
 
 ---
 
@@ -210,6 +245,7 @@ All endpoints require `X-API-Key: enterprise-rag-secret` header.
 | `POST` | `/api/v1/portfolio/parse` | PDF → structured profile JSON |
 | `GET` | `/api/v1/perf/history` | Last 30 query performance records |
 | `GET` | `/api/v1/perf/stats` | Aggregated stats by retrieval strategy |
+| `POST` | `/api/v1/eval/run` | Evaluate RAG quality — 3 metrics per question |
 | `POST` | `/api/v1/game/suggest-subtopics` | LLM-suggested subtopics for a topic |
 | `POST` | `/api/v1/game/start` | Start quiz — SSE streaming |
 | `POST` | `/api/v1/game/answer` | Submit MCQ answer |
@@ -239,26 +275,32 @@ The Blueprint tab has model answers to all of these, ready for interviews.
 
 ```
 RAG-Assistant/
+├── docker-compose.yml           # One-command startup (backend + frontend with health checks)
 ├── backend/
-│   ├── app/
-│   │   ├── api/routes/          # chat · agent · portfolio · game · perf · status
-│   │   ├── services/
-│   │   │   ├── retrieval/       # 4 retrieval strategies
-│   │   │   ├── vector_store.py  # ChromaDB wrapper
-│   │   │   ├── agent.py         # ReAct loop — MAX_ITERATIONS=7
-│   │   │   ├── portfolio_parser.py  # PDF → LLM → JSON
-│   │   │   └── reranker.py      # Cross-encoder re-ranking
-│   │   └── main.py              # FastAPI app + auth middleware
-│   └── requirements.txt
+│   ├── tests/                   # 39 pytest tests (chunking · helpers · API)
+│   ├── requirements.txt
+│   ├── requirements-dev.txt     # pytest, httpx
+│   └── app/
+│       ├── api/routes/          # chat · agent · portfolio · game · perf · status · eval
+│       ├── services/
+│       │   ├── retrieval/       # 4 retrieval strategies
+│       │   ├── vector_store.py  # ChromaDB wrapper
+│       │   ├── agent.py         # ReAct loop — MAX_ITERATIONS=7
+│       │   ├── portfolio_parser.py  # PDF → LLM → JSON
+│       │   ├── reranker.py      # Cross-encoder re-ranking
+│       │   └── eval_metrics.py  # context_relevance · answer_relevance · faithfulness
+│       └── main.py              # FastAPI app + auth middleware
 └── frontend/
     └── src/
-        ├── App.tsx              # Layout — icon nav + tab panels
-        ├── api/client.ts        # Typed fetch wrappers + SSE generators
+        ├── App.tsx              # Layout — icon nav + 7 tab panels (home default, logo → home)
+        ├── api/client.ts        # Typed fetch wrappers + SSE generators: streamChat · streamAgent · streamEval
         ├── context/             # ProcessContext — real-time event bus
         └── components/
+            ├── HomePage.tsx     # Welcome screen: hero · quick start · 6 feature cards
             ├── Chat.tsx
             ├── AgentPage.tsx
             ├── PortfolioPage.tsx # 5 templates: Basic · Creative · Dark · OldSchool · 90's
+            ├── EvalPage.tsx     # RAG eval — SSE streaming results, 90s timeout, stop button
             ├── Blueprint.tsx    # 8-section docs with scrollspy
             ├── TerminalSidebar.tsx
             └── game/            # Quiz game components
@@ -268,6 +310,7 @@ RAG-Assistant/
 
 ## 🔭 What's Next
 
+- [ ] GitHub Actions CI — run pytest on every push
 - [ ] Agent memory — persist reasoning traces across sessions
 - [ ] Structured tool calling — replace regex-parsed ReAct with function calling
 - [ ] Multi-modal ingestion — URLs, CSV, YouTube transcripts, OCR

@@ -68,6 +68,8 @@ const TECH_BADGES = [
   { label: "CrossEncoder",     color: "bg-rose-100 text-rose-700" },
   { label: "pdfplumber",       color: "bg-yellow-100 text-yellow-700" },
   { label: "DiceBear",         color: "bg-lime-100 text-lime-700" },
+  { label: "Docker",           color: "bg-sky-100 text-sky-700" },
+  { label: "pytest",           color: "bg-gray-100 text-gray-700" },
 ];
 
 function Hero() {
@@ -408,6 +410,24 @@ const FEATURES = [
     tags: [{ label: "LLM Parsing", color: "bg-lime-50 text-lime-700" }],
     proves: "LLM document parsing + dynamic UI generation",
   },
+  {
+    icon: FlaskConical, color: "bg-blue-500", title: "RAG Evaluation Tab",
+    desc: "Paste questions, pick a strategy, get three metrics per question: context relevance, faithfulness (LLM judge), and answer relevance.",
+    tags: [{ label: "Eval", color: "bg-blue-50 text-blue-600" }],
+    proves: "RAG quality measurement + LLM-as-judge pattern",
+  },
+  {
+    icon: Check, color: "bg-slate-600", title: "pytest Test Suite",
+    desc: "39 tests covering all 4 chunking strategies, retrieval helper functions, and every API endpoint — with mocked ML deps so they run in < 2 seconds.",
+    tags: [{ label: "Testing", color: "bg-slate-100 text-slate-600" }],
+    proves: "Production-grade test coverage with service mocking",
+  },
+  {
+    icon: Box, color: "bg-gray-800", title: "Docker Compose",
+    desc: "One command brings up both services with health checks, named volumes for ChromaDB and SQLite, and support for Groq or Ollama via environment variables.",
+    tags: [{ label: "DevOps", color: "bg-gray-100 text-gray-700" }],
+    proves: "Containerised deployment + infrastructure-as-code",
+  },
 ];
 
 function WhatWeBuilt() {
@@ -415,7 +435,7 @@ function WhatWeBuilt() {
     <FadeIn className="mb-10">
       <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Features</div>
       <h2 className="text-2xl font-black text-gray-900 mb-1">What We Built</h2>
-      <p className="text-gray-500 text-sm mb-6">Eleven production-grade capabilities, each independently useful.</p>
+      <p className="text-gray-500 text-sm mb-6">Fourteen production-grade capabilities, each independently useful.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {FEATURES.map((f, i) => (
           <motion.div
@@ -511,6 +531,14 @@ const CONCEPTS = [
     what: "ReAct structures LLM output as Thought → Action → Action Input. The backend parses this with regex, executes the named tool (ChromaDB search, DuckDuckGo, safe eval, or direct answer), and returns an Observation. The loop continues for up to MAX_ITERATIONS=7. Every step streams to the frontend as a typed SSE event.",
     why: "Single-pass RAG retrieves once and hopes for the best. An agent can search documents, pivot to the web if docs are lacking, do math on the result, and only answer once all sub-questions are resolved. It can also self-correct — if a tool call returns nothing useful, it chooses a different tool or rephrases the query.",
     when: "Complex questions requiring multiple sources or reasoning steps: 'Compare revenue in my uploaded report with today's market data.' or 'What is 15% of the total chunks indexed in this collection?'",
+  },
+  {
+    icon: FlaskConical, color: "text-blue-500",
+    title: "RAG Evaluation Metrics",
+    tldr: "You can't improve what you don't measure — three metrics tell you where your pipeline breaks.",
+    what: "Context Relevance: mean cosine similarity of retrieved chunks to the question (already available from ChromaDB scores — no extra compute). Answer Relevance: cosine similarity between the question embedding and the answer embedding — does the answer actually address the question? Faithfulness: LLM judge asks 'from 0-10, how grounded is this answer in the provided context?' — a lightweight RAGAS-style evaluation without the heavy dependency.",
+    why: "Without metrics you're guessing whether Hybrid beats Naive for your documents. With them you run the eval tab, pick a collection, and compare strategies quantitatively. Faithfulness specifically catches hallucinations: an answer can be fluent and relevant but still fabricate facts the context never contained.",
+    when: "Before going to production: run an eval set to establish a baseline. After changing chunking strategy or retrieval strategy: compare scores. When users complain about answer quality: check which metric dropped.",
   },
   {
     icon: FlaskConical, color: "text-pink-500",
@@ -694,6 +722,14 @@ const INTERVIEW_QA = [
     q: "What is the ReAct pattern and how did you implement it?",
     a: "ReAct (Reasoning + Acting) is a prompting pattern where the LLM interleaves Thought steps and Action steps. My implementation: the system prompt instructs the LLM to always output Thought → Action → Action Input. I parse this with regex, execute the named tool — ChromaDB search, DuckDuckGo web search, safe eval for math, or direct answer — and inject the result back as an Observation. This loops up to MAX_ITERATIONS=7. If the LLM emits a Final Answer, the loop exits. Every step (thought, action, observation, answer) streams to the React frontend as a typed SSE event, so users see the reasoning trace in real time. It's essentially a miniature LangChain agent loop built from scratch.",
   },
+  {
+    q: "How do you evaluate a RAG system without ground-truth labels?",
+    a: "Three metrics cover most of what matters without needing labelled datasets. Context Relevance: the cosine similarity scores ChromaDB already returns tell you whether retrieved chunks are topically close to the question — if this is low, your retrieval strategy or chunking is the problem. Answer Relevance: embed both the question and the generated answer, compute cosine similarity — if high, the answer is on-topic; if low, the LLM drifted. Faithfulness: use the LLM as a judge — prompt it to score from 0-10 how well the answer is grounded in the provided context. This is the RAGAS approach, implemented here without the RAGAS library to keep the dependency footprint small. These three metrics let you compare retrieval strategies quantitatively: run the Eval tab against the same question set with Naive vs. Hybrid vs. HyDE and see which wins.",
+  },
+  {
+    q: "How did you approach testing a system that relies on ML models?",
+    a: "The key insight is that ML model loading needs to be decoupled from the API logic under test. In conftest.py I patch sentence_transformers into sys.modules before any app module is imported — so SentenceTransformer() and CrossEncoder() return mocks that produce deterministic numpy arrays, never touching disk. ChromaDB uses a real ephemeral store at /tmp/ so persistence logic is exercised without polluting the dev database. LLM calls (Groq) are mocked per-test with AsyncMock so tests run without an API key. This gives 39 tests in ~1.5 seconds: chunking strategies are pure Python with no mocking needed, helper functions like _normalize and _rrf are unit-tested directly, and API endpoints are tested via FastAPI's TestClient with service-layer patches.",
+  },
 ];
 
 function InterviewPrep() {
@@ -707,7 +743,7 @@ function InterviewPrep() {
           <span className="text-xs font-bold tracking-widest text-brand-400 uppercase">Interview Ready</span>
         </div>
         <h2 className="text-2xl font-black text-white mb-1">Cheat Sheet</h2>
-        <p className="text-gray-400 text-sm mb-6">6 questions interviewers ask about AI/ML systems. Click to reveal a model answer.</p>
+        <p className="text-gray-400 text-sm mb-6">9 questions interviewers ask about AI/ML systems. Click to reveal a model answer.</p>
         <div className="space-y-2">
           {INTERVIEW_QA.map((item, i) => (
             <div key={i} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800">
@@ -756,13 +792,15 @@ const STACK = [
   { name: "SQLite",                color: "bg-amber-500",  why: "Zero-config persistent storage for game sessions + query performance logs." },
   { name: "ddgs (DuckDuckGo)",     color: "bg-cyan-500",   why: "Web search without an API key — critical for quiz game's web-source questions." },
   { name: "pdfplumber + DiceBear", color: "bg-lime-500",   why: "PDF text + photo extraction + illustrated avatars for the CV → Portfolio generator." },
+  { name: "pytest + httpx",        color: "bg-slate-500",  why: "39 tests covering chunking, helpers, and API endpoints. ML deps mocked via sys.modules so tests run in < 2 seconds with no model downloads." },
+  { name: "Docker Compose",        color: "bg-gray-700",   why: "One-command startup for both services with health checks, named volumes, and env-configurable LLM provider (Ollama or Groq)." },
 ];
 
 const NEXT_ITEMS = [
   { icon: Brain,        color: "text-violet-500", title: "Agent Memory & Trace Store",  desc: "Persist reasoning traces to SQLite across sessions — let the agent avoid redundant searches." },
   { icon: Brain,        color: "text-pink-500",   title: "Embedding Model Selection",   desc: "Pick bge-small, e5-large, or nomic-embed-text at upload time with automatic re-index." },
   { icon: FileText,     color: "text-blue-500",   title: "Multi-modal Ingestion",       desc: "URLs, CSV, YouTube transcripts, and images with OCR — beyond PDF/DOCX/TXT." },
-  { icon: BarChart2,    color: "text-green-500",  title: "Chunking × Strategy Matrix",  desc: "Track chunk + retrieval strategy combos in perf.db to find the optimal pairing per collection." },
+  { icon: BarChart2,    color: "text-green-500",  title: "GitHub Actions CI",           desc: "Run pytest on every push. Block merges on test failure. Auto-build Docker images to GHCR." },
   { icon: BrainCircuit, color: "text-cyan-500",   title: "Structured Tool Calling",     desc: "Replace regex-parsed ReAct with OpenAI-compatible function calling for reliable dispatch." },
   { icon: FileText,     color: "text-lime-600",   title: "Portfolio AI Enhancement",    desc: "LLM-powered bullet rewriting, job description tailoring, and skill gap analysis." },
 ];
@@ -814,15 +852,156 @@ function TechStackAndRoadmap() {
   );
 }
 
+// ─── 9. setup guide ──────────────────────────────────────────────────────
+
+function CodeBlock({ code }: { code: string }) {
+  return (
+    <pre className="bg-gray-950 text-gray-200 rounded-xl p-4 text-xs font-mono overflow-x-auto leading-relaxed">
+      <code>{code.trim()}</code>
+    </pre>
+  );
+}
+
+const PREREQS = [
+  { label: "Python 3.11+",     desc: "Backend runtime",          color: "text-blue-600  bg-blue-50  border-blue-200"   },
+  { label: "Node.js 18+",      desc: "Frontend toolchain",       color: "text-green-600 bg-green-50 border-green-200"  },
+  { label: "Ollama",           desc: "Local LLM (optional)",     color: "text-orange-600 bg-orange-50 border-orange-200"},
+  { label: "Groq API key",     desc: "Cloud LLM (optional)",     color: "text-purple-600 bg-purple-50 border-purple-200"},
+];
+
+const DOCKER_CMD = `# Clone the repo
+git clone https://github.com/yourusername/RAG-Assistant.git
+cd RAG-Assistant
+
+# Option A — Ollama running locally on your machine
+docker compose up --build
+
+# Option B — Groq (no GPU, no Ollama needed)
+LLM_PROVIDER=groq GROQ_API_KEY=gsk_... docker compose up --build`;
+
+const LOCAL_CMD = `# 1. Backend
+cd backend
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cp .env.example .env          # edit OLLAMA_MODEL or set GROQ_API_KEY
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 2. Frontend (separate terminal)
+cd frontend
+npm install
+npm run dev
+# → open http://localhost:5173
+
+# 3. Tests
+cd backend
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest tests/ -v   # 39 tests, ~2 seconds`;
+
+const ENV_VARS = [
+  { key: "LLM_PROVIDER",   default: "ollama",                   desc: "Switch to groq for cloud inference"          },
+  { key: "OLLAMA_MODEL",   default: "granite4.1:8b",            desc: "Any model pulled via ollama pull"            },
+  { key: "GROQ_API_KEY",   default: "(empty)",                  desc: "Required when LLM_PROVIDER=groq"             },
+  { key: "GROQ_MODEL",     default: "llama-3.3-70b-versatile",  desc: "Groq model name"                             },
+  { key: "EMBEDDING_MODEL",default: "all-MiniLM-L6-v2",        desc: "sentence-transformers model for embeddings"   },
+  { key: "CHUNK_SIZE",     default: "1000",                     desc: "Max characters per chunk"                     },
+  { key: "CHUNK_OVERLAP",  default: "200",                      desc: "Overlap between consecutive chunks"           },
+  { key: "API_KEY",        default: "enterprise-rag-secret",    desc: "X-API-Key header value required on all calls" },
+];
+
+function SetupGuide() {
+  return (
+    <FadeIn className="mb-10">
+      <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Getting Started</div>
+      <h2 className="text-2xl font-black text-gray-900 mb-1">Setup Guide</h2>
+      <p className="text-gray-500 text-sm mb-6">Two ways to run — Docker (one command) or local dev (full control).</p>
+
+      {/* Prerequisites */}
+      <div className="mb-6">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Prerequisites</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {PREREQS.map((p) => (
+            <div key={p.label} className={`border rounded-xl px-3 py-2.5 ${p.color}`}>
+              <p className="text-sm font-bold leading-tight">{p.label}</p>
+              <p className="text-[11px] mt-0.5 opacity-75">{p.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Docker */}
+      <div className="mb-6 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center shrink-0">
+            <Box size={14} className="text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900">Option A — Docker (recommended)</p>
+            <p className="text-xs text-gray-400">Both services start with a single command. Health checks wired up.</p>
+          </div>
+        </div>
+        <CodeBlock code={DOCKER_CMD} />
+        <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-500">
+          <span><span className="font-semibold text-gray-700">Frontend →</span> http://localhost:3000</span>
+          <span><span className="font-semibold text-gray-700">Backend →</span> http://localhost:8000</span>
+        </div>
+      </div>
+
+      {/* Local dev */}
+      <div className="mb-6 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-lg bg-green-600 flex items-center justify-center shrink-0">
+            <Terminal size={14} className="text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900">Option B — Local dev</p>
+            <p className="text-xs text-gray-400">Hot-reload for both backend (uvicorn) and frontend (Vite). Also shows how to run tests.</p>
+          </div>
+        </div>
+        <CodeBlock code={LOCAL_CMD} />
+        <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-500">
+          <span><span className="font-semibold text-gray-700">Frontend →</span> http://localhost:5173</span>
+          <span><span className="font-semibold text-gray-700">Backend →</span> http://localhost:8000</span>
+        </div>
+      </div>
+
+      {/* Env vars */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <p className="text-sm font-bold text-gray-900 mb-3">Environment Variables <span className="font-normal text-gray-400 text-xs">(backend/.env)</span></p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-gray-100 text-left">
+                <th className="pb-2 font-semibold text-gray-500 pr-4">Key</th>
+                <th className="pb-2 font-semibold text-gray-500 pr-4">Default</th>
+                <th className="pb-2 font-semibold text-gray-500">Notes</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {ENV_VARS.map((v) => (
+                <tr key={v.key}>
+                  <td className="py-1.5 pr-4 font-mono text-brand-600">{v.key}</td>
+                  <td className="py-1.5 pr-4 font-mono text-gray-500">{v.default}</td>
+                  <td className="py-1.5 text-gray-500">{v.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </FadeIn>
+  );
+}
+
 // ─── scrollspy TOC ────────────────────────────────────────────────────────
 
 const TOC = [
-  { id: "pipeline",   label: "RAG Pipeline"   },
-  { id: "arch",       label: "Architecture"   },
-  { id: "features",   label: "Features"       },
-  { id: "concepts",   label: "Concepts"       },
-  { id: "strategies", label: "Strategies"     },
-  { id: "interview",  label: "Interview Prep" },
+  { id: "setup",      label: "Setup Guide"   },
+  { id: "pipeline",   label: "RAG Pipeline"  },
+  { id: "arch",       label: "Architecture"  },
+  { id: "features",   label: "Features"      },
+  { id: "concepts",   label: "Concepts"      },
+  { id: "strategies", label: "Strategies"    },
+  { id: "interview",  label: "Interview Prep"},
   { id: "stack",      label: "Stack & Roadmap"},
 ];
 
@@ -860,6 +1039,7 @@ export function Blueprint() {
           <Hero />
           <LiveMetrics />
 
+          <div id="setup"    data-section><SetupGuide /></div>
           <div id="pipeline" data-section><RAGPipeline /></div>
           <div id="arch"     data-section><ArchDiagram /></div>
           <div id="features" data-section><WhatWeBuilt /></div>

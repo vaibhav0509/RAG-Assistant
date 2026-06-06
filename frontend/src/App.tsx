@@ -1,24 +1,27 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Gamepad2, Terminal, Compass, BrainCircuit, FileUser, Zap } from "lucide-react";
+import { MessageSquare, Gamepad2, Terminal, Compass, BrainCircuit, FileUser, Zap, FlaskConical } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { Chat } from "./components/Chat";
 import { GamePage } from "./components/game/GamePage";
 import { Blueprint } from "./components/Blueprint";
 import { AgentPage } from "./components/AgentPage";
 import { PortfolioPage } from "./components/PortfolioPage";
+import { EvalPage } from "./components/EvalPage";
+import { HomePage } from "./components/HomePage";
 import { ModelSelector } from "./components/ModelSelector";
 import { TerminalSidebar } from "./components/TerminalSidebar";
 import { ProcessProvider, useProcess } from "./context/ProcessContext";
 
-type Tab = "chat" | "game" | "blueprint" | "agent" | "portfolio";
+type Tab = "home" | "chat" | "game" | "blueprint" | "agent" | "portfolio" | "eval";
 
 const TABS: { id: Tab; label: string; icon: typeof MessageSquare; hint: string }[] = [
-  { id: "chat",      label: "Chat",      icon: MessageSquare, hint: "RAG Chat"         },
-  { id: "agent",     label: "Agent",     icon: BrainCircuit,  hint: "ReAct Agent"      },
-  { id: "game",      label: "Quiz",      icon: Gamepad2,      hint: "Quiz Game"        },
-  { id: "portfolio", label: "Portfolio", icon: FileUser,      hint: "CV → Portfolio"   },
-  { id: "blueprint", label: "Blueprint", icon: Compass,       hint: "Docs & Blueprint" },
+  { id: "chat",      label: "Chat",      icon: MessageSquare,  hint: "RAG Chat"         },
+  { id: "agent",     label: "Agent",     icon: BrainCircuit,   hint: "ReAct Agent"      },
+  { id: "game",      label: "Quiz",      icon: Gamepad2,       hint: "Quiz Game"        },
+  { id: "portfolio", label: "Portfolio", icon: FileUser,       hint: "CV → Portfolio"   },
+  { id: "eval",      label: "Eval",      icon: FlaskConical,   hint: "RAG Evaluation"   },
+  { id: "blueprint", label: "Blueprint", icon: Compass,        hint: "Docs & Blueprint" },
 ];
 
 // ─── Desktop icon nav ──────────────────────────────────────────────────────
@@ -26,9 +29,22 @@ const TABS: { id: Tab; label: string; icon: typeof MessageSquare; hint: string }
 function IconNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
   return (
     <nav className="hidden md:flex w-[60px] bg-gray-950 flex-col items-center py-3 gap-1 shrink-0 border-r border-gray-800 z-20">
-      {/* Logo */}
-      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center mb-3 shrink-0">
-        <Zap size={16} className="text-white" />
+      {/* Logo — click to go home */}
+      <div className="relative group mb-3 shrink-0">
+        <button
+          onClick={() => setTab("home")}
+          className={`w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center transition-all ${
+            tab === "home" ? "ring-2 ring-brand-400 ring-offset-2 ring-offset-gray-950" : "hover:opacity-90"
+          }`}
+        >
+          <Zap size={16} className="text-white" />
+        </button>
+        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+          <div className="bg-gray-900 border border-gray-700 px-2.5 py-1.5 rounded-lg shadow-xl whitespace-nowrap">
+            <p className="text-xs font-semibold text-white">Home</p>
+            <p className="text-[10px] text-gray-400">Overview & quick start</p>
+          </div>
+        </div>
       </div>
 
       {TABS.map((t) => (
@@ -93,7 +109,7 @@ function MobileNav({ tab, setTab, monitorOpen, onToggleMonitor }: {
 
 function AppInner() {
   const { log } = useProcess();
-  const [tab, setTab]                     = useState<Tab>("chat");
+  const [tab, setTab]                     = useState<Tab>("home");
   const [collection, setCollection]       = useState("default");
   const [refreshKey, setRefreshKey]       = useState(0);
   const [selectedModel, setSelectedModel] = useState("");
@@ -112,8 +128,8 @@ function AppInner() {
 
   useEffect(() => {
     const labels: Record<Tab, string> = {
-      chat: "Chat", game: "Quiz Game", blueprint: "Blueprint",
-      agent: "Agent", portfolio: "Portfolio",
+      home: "Home", chat: "Chat", game: "Quiz Game", blueprint: "Blueprint",
+      agent: "Agent", portfolio: "Portfolio", eval: "Eval",
     };
     log("SYSTEM", `Switched to ${labels[tab]}`, "info");
   }, [tab]);
@@ -129,10 +145,13 @@ function AppInner() {
         {/* Header */}
         <header className="flex items-center justify-between px-4 h-12 bg-white border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-2">
-            {/* Mobile logo */}
-            <div className="md:hidden w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shrink-0">
+            {/* Mobile logo — click to go home */}
+            <button
+              onClick={() => setTab("home")}
+              className="md:hidden w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shrink-0"
+            >
               <Zap size={13} className="text-white" />
-            </div>
+            </button>
             <span className="font-bold text-gray-800 text-sm">AI Studio</span>
             {activeHint && (
               <span className="hidden md:inline text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
@@ -179,6 +198,9 @@ function AppInner() {
 
           {/* Tab panels — all mounted, toggled with CSS to preserve state */}
           <div className="flex-1 overflow-hidden min-w-0 relative mb-16 md:mb-0">
+            <div className={`absolute inset-0 flex overflow-hidden ${tab === "home"      ? "" : "invisible pointer-events-none"}`}>
+              <HomePage onNavigate={(t) => setTab(t as Tab)} />
+            </div>
             <div className={`absolute inset-0 flex overflow-hidden ${tab === "chat"      ? "" : "invisible pointer-events-none"}`}>
               <Chat collection={collection} onCollectionChange={handleCollectionChange} model={selectedModel} />
             </div>
@@ -190,6 +212,9 @@ function AppInner() {
             </div>
             <div className={`absolute inset-0 flex overflow-hidden ${tab === "portfolio" ? "" : "invisible pointer-events-none"}`}>
               <PortfolioPage />
+            </div>
+            <div className={`absolute inset-0 flex overflow-hidden ${tab === "eval"      ? "" : "invisible pointer-events-none"}`}>
+              <EvalPage />
             </div>
             <div className={`absolute inset-0 flex overflow-hidden ${tab === "blueprint" ? "" : "invisible pointer-events-none"}`}>
               <Blueprint />

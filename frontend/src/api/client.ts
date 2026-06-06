@@ -210,3 +210,67 @@ export async function fetchGameHistory() {
   if (!res.ok) throw new Error("Failed to fetch history");
   return res.json();
 }
+
+// Eval API
+
+export interface EvalResult {
+  question: string;
+  answer: string;
+  context_count: number;
+  context_relevance: number;
+  answer_faithfulness: number;
+  answer_relevance: number;
+  latency_ms: number;
+  error?: string;
+}
+
+export interface EvalResponse {
+  results: EvalResult[];
+  aggregate: {
+    context_relevance: number;
+    answer_faithfulness: number;
+    answer_relevance: number;
+    avg_latency_ms: number;
+    total_questions: number;
+    successful: number;
+  };
+}
+
+export type EvalStreamEvent =
+  | { type: "progress"; index: number; total: number; question: string }
+  | { type: "result";   index: number; result: EvalResult }
+  | { type: "done";     aggregate: EvalResponse["aggregate"] }
+  | { type: "error";    index: number; message: string };
+
+export async function* streamEval(payload: {
+  questions: string[];
+  collection: string;
+  strategy: string;
+  top_k: number;
+  use_reranker: boolean;
+  model?: string;
+}): AsyncGenerator<EvalStreamEvent> {
+  const res = await fetch(`${BASE}/eval/run`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Evaluation failed");
+  }
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      yield JSON.parse(line.slice(6)) as EvalStreamEvent;
+    }
+  }
+}
