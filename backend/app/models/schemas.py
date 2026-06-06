@@ -15,6 +15,7 @@ class ChatRequest(BaseModel):
     model: Optional[str] = None
     retrieval_strategy: str = "naive"
     top_k: int = 5
+    use_reranker: bool = False
 
 
 class ChatResponse(BaseModel):
@@ -39,3 +40,9 @@ class CollectionInfo(BaseModel):
 class DeleteResponse(BaseModel):
     collection: str
     deleted: bool
+
+
+class AgentRequest(BaseModel):
+    question: str
+    collection: str = "default"
+    model: Optional[str] = None

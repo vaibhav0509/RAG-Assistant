@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check, Search, Layers, Lightbulb, GitMerge } from "lucide-react";
+import { ChevronDown, Check, Search, Layers, Lightbulb, GitMerge, Sparkles } from "lucide-react";
 
 export interface RetrievalConfig {
   strategy: string;
   topK: number;
+  rerank: boolean;
 }
 
 const STRATEGIES = [
@@ -85,6 +86,20 @@ export function RetrievalSelector({ value, onChange }: Props) {
         ))}
       </select>
 
+      {/* Re-rank toggle */}
+      <button
+        onClick={() => onChange({ ...value, rerank: !value.rerank })}
+        title="Cross-encoder re-ranking — scores each chunk against your query for higher precision"
+        className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+          value.rerank
+            ? "bg-purple-100 text-purple-700 border-purple-300"
+            : "bg-gray-100 text-gray-500 border-transparent hover:bg-gray-200"
+        }`}
+      >
+        <Sparkles size={12} />
+        Re-rank
+      </button>
+
       {open && (
         <div className="absolute top-full mt-1 left-0 z-50 bg-white border border-gray-200 rounded-xl shadow-xl w-72 p-1.5">
           <p className="text-xs text-gray-400 px-2 py-1 font-semibold uppercase tracking-wide">Retrieval Strategy</p>
@@ -104,6 +119,15 @@ export function RetrievalSelector({ value, onChange }: Props) {
               {value.strategy === s.id && <Check size={14} className="text-green-500 mt-0.5 shrink-0" />}
             </button>
           ))}
+          <div className="border-t border-gray-100 mt-1 pt-1 px-3 py-2">
+            <div className="flex items-start gap-2">
+              <Sparkles size={14} className="text-purple-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-gray-800">Re-ranking</p>
+                <p className="text-xs text-gray-400 mt-0.5">Cross-encoder scores each chunk against your exact query. Higher precision, ~100ms extra latency.</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

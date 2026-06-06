@@ -10,8 +10,9 @@ export function useChat(collection: string, model?: string, retrieval?: Retrieva
   const [error, setError] = useState<string | null>(null);
   const { log } = useProcess();
 
-  const strategy  = retrieval?.strategy ?? "naive";
-  const topK      = retrieval?.topK ?? 5;
+  const strategy = retrieval?.strategy ?? "naive";
+  const topK     = retrieval?.topK ?? 5;
+  const rerank   = retrieval?.rerank ?? false;
 
   const STRATEGY_LABEL: Record<string, string> = {
     naive:       "Naive Dense",
@@ -23,9 +24,9 @@ export function useChat(collection: string, model?: string, retrieval?: Retrieva
   const sendMessage = useCallback(
     async (question: string) => {
       setError(null);
-      const userMsg: Message  = { id: crypto.randomUUID(), role: "user", content: question };
-      const assistantId       = crypto.randomUUID();
-      const assistantMsg: Message = { id: assistantId, role: "assistant", content: "", loading: true };
+      const userMsg: Message       = { id: crypto.randomUUID(), role: "user", content: question };
+      const assistantId            = crypto.randomUUID();
+      const assistantMsg: Message  = { id: assistantId, role: "assistant", content: "", loading: true };
 
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
       setLoading(true);
@@ -35,22 +36,22 @@ export function useChat(collection: string, model?: string, retrieval?: Retrieva
 
       log("QUERY",     `"${question.slice(0, 60)}${question.length > 60 ? "…" : ""}"`, "info");
       log("EMBED",     "Vectorizing query · all-MiniLM-L6-v2", "running");
-      log("RETRIEVAL", `Strategy: ${STRATEGY_LABEL[strategy]} · Top-${topK}`, "running");
+      log("RETRIEVAL", `Strategy: ${STRATEGY_LABEL[strategy]} · Top-${topK}${rerank ? ` · fetching ${topK * 3} candidates` : ""}`, "running");
 
       if (strategy === "hyde")        log("MODEL", "Generating hypothetical document (HyDE)…", "running");
       if (strategy === "multi_query") log("MODEL", "Expanding to multiple query variations…", "running");
       if (strategy === "hybrid")      log("DB",    "Running BM25 keyword search + dense vector search", "running");
+      if (rerank)                     log("RAG",   "Cross-encoder re-ranking candidates…", "running");
 
       try {
         let fullContent = "";
         let sources: Source[] = [];
         let firstToken = false;
-        let perf: Record<string, unknown> = {};
 
-        for await (const event of streamChat(question, collection, history, model, strategy, topK)) {
+        for await (const event of streamChat(question, collection, history, model, strategy, topK, rerank)) {
           if (event.token) {
             if (!firstToken) {
-              log("MODEL",  `Calling ${model || "default model"} via Ollama`, "running");
+              log("MODEL",  `Calling ${model || "default model"}`, "running");
               log("STREAM", "Receiving response tokens…", "running");
               firstToken = true;
             }
@@ -61,12 +62,16 @@ export function useChat(collection: string, model?: string, retrieval?: Retrieva
           }
           if (event.done) {
             sources = event.sources ?? [];
-            perf    = event.perf ?? {};
-            const p = perf as any;
+            const p = event.perf ?? {} as any;
             const srcCount = sources.length;
-            log("RETRIEVAL", `Retrieved ${srcCount} chunks · avg score ${sources.length ? (sources.reduce((a,s: any) => a + s.score, 0) / sources.length).toFixed(3) : "n/a"}`, "success");
+            const avgScore = sources.length
+              ? (sources.reduce((a: number, s: any) => a + (s.rerank_score ?? s.score), 0) / sources.length).toFixed(3)
+              : "n/a";
+
+            log("RETRIEVAL", `Retrieved ${srcCount} chunks · avg score ${avgScore}${p.reranked ? " (re-ranked)" : ""}`, "success");
             log("RAG",       `Context injected (${srcCount} source${srcCount !== 1 ? "s" : ""})`, "success");
-            if (p.retrieval_ms) log("CONTEXT", `Retrieval ${p.retrieval_ms}ms · LLM ${p.llm_ms}ms · Total ${p.total_ms}ms`, "info");
+            if (p.rerank_ms) log("RAG", `Re-rank: ${p.rerank_ms}ms · scored ${sources.length} candidates`, "info");
+            if (p.retrieval_ms) log("CONTEXT", `Retrieve ${p.retrieval_ms}ms · LLM ${p.llm_ms}ms · Total ${p.total_ms}ms`, "info");
           }
         }
 
@@ -87,7 +92,7 @@ export function useChat(collection: string, model?: string, retrieval?: Retrieva
         setLoading(false);
       }
     },
-    [messages, collection, model, strategy, topK, log]
+    [messages, collection, model, strategy, topK, rerank, log]
   );
 
   const clearMessages = useCallback(() => setMessages([]), []);

@@ -5,7 +5,8 @@ export type EventStatus = "info" | "running" | "success" | "error" | "warn";
 export type EventTag =
   | "SYSTEM" | "QUERY" | "EMBED" | "RETRIEVAL"
   | "CONTEXT" | "MODEL" | "STREAM" | "DONE"
-  | "WEB" | "GAME" | "ANSWER" | "DB" | "RAG";
+  | "WEB" | "GAME" | "ANSWER" | "DB" | "RAG"
+  | "AGENT" | "TOOL" | "RESULT" | "PORTFOLIO";
 
 export interface ProcessEvent {
   id: string;

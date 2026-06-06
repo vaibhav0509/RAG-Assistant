@@ -63,11 +63,12 @@ export async function* streamChat(
   model?: string,
   retrieval_strategy: string = "naive",
   top_k: number = 5,
+  use_reranker: boolean = false,
 ) {
   const res = await fetch(`${BASE}/chat`, {
     method: "POST",
     headers: headers(),
-    body: JSON.stringify({ question, collection, history, stream: true, model, retrieval_strategy, top_k }),
+    body: JSON.stringify({ question, collection, history, stream: true, model, retrieval_strategy, top_k, use_reranker }),
   });
   if (!res.ok) {
     const err = await res.json();
@@ -85,6 +86,53 @@ export async function* streamChat(
     for (const line of lines) {
       if (!line.startsWith("data: ")) continue;
       yield JSON.parse(line.slice(6));
+    }
+  }
+}
+
+export async function parsePortfolio(file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/portfolio/parse`, {
+    method: "POST",
+    headers: { "X-API-Key": API_KEY },
+    body: form,
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Portfolio parse failed");
+  }
+  return res.json();
+}
+
+export async function* streamAgent(
+  question: string,
+  collection: string,
+  model?: string,
+) {
+  const res = await fetch(`${BASE}/agent`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ question, collection, model }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Agent failed");
+  }
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const raw = line.slice(6);
+      if (raw === "[DONE]") return;
+      yield JSON.parse(raw);
     }
   }
 }

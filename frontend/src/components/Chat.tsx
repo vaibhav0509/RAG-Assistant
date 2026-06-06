@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function Chat({ collection, onCollectionChange, model }: Props) {
-  const [retrieval, setRetrieval] = useState<RetrievalConfig>({ strategy: "naive", topK: 5 });
+  const [retrieval, setRetrieval] = useState<RetrievalConfig>({ strategy: "naive", topK: 5, rerank: false });
   const { messages, loading, sendMessage, clearMessages } = useChat(collection, model, retrieval);
   const [input, setInput] = useState("");
   const [showUpload, setShowUpload] = useState(false);

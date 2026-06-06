@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Layers, ChevronDown, Database, Server, Globe, Zap,
   Search, GitMerge, Lightbulb, FileText, ArrowRight,
-  Check, Cpu, BookOpen, Rocket, BarChart2, Terminal,
+  Check, Cpu, BookOpen, BarChart2, Terminal,
   Brain, Code2, Network, Mic, Trophy, Target, Box,
-  ShieldCheck, Shuffle, GitBranch, FlaskConical,
+  ShieldCheck, Shuffle, GitBranch, FlaskConical, BrainCircuit, Eye,
 } from "lucide-react";
 import { fetchPerfStats } from "../api/client";
 
@@ -64,6 +64,10 @@ const TECH_BADGES = [
   { label: "Vite",             color: "bg-violet-100 text-violet-700" },
   { label: "Tailwind CSS",     color: "bg-teal-100 text-teal-700" },
   { label: "TypeScript",       color: "bg-sky-100 text-sky-700" },
+  { label: "ReAct Agent",      color: "bg-violet-100 text-violet-700" },
+  { label: "CrossEncoder",     color: "bg-rose-100 text-rose-700" },
+  { label: "pdfplumber",       color: "bg-yellow-100 text-yellow-700" },
+  { label: "DiceBear",         color: "bg-lime-100 text-lime-700" },
 ];
 
 function Hero() {
@@ -94,7 +98,7 @@ function Hero() {
           transition={{ duration: 0.6, delay: 0.25 }}
           className="text-gray-400 mt-3 text-base leading-relaxed"
         >
-          A production-style AI system built entirely on local infrastructure — no paid APIs, no cloud lock-in.
+          A production-style AI system that runs <span className="text-brand-400 font-semibold">fully local with Ollama</span> or <span className="text-purple-400 font-semibold">cloud-hosted via Groq</span> — same codebase, your choice of infrastructure.
           Everything from vector embeddings to streaming LLM responses, explained layer by layer.
         </motion.p>
 
@@ -202,6 +206,15 @@ const QUERY_STEPS = [
   { icon: Zap,       label: "Stream Answer", desc: "SSE tokens",               color: "bg-amber-500" },
 ];
 
+const AGENT_STEPS = [
+  { icon: Search,       label: "Question",   desc: "any question",             color: "bg-orange-500" },
+  { icon: Brain,        label: "Thought",    desc: "reason + plan",            color: "bg-violet-500" },
+  { icon: Zap,          label: "Action",     desc: "pick a tool",              color: "bg-brand-500" },
+  { icon: Eye,          label: "Observe",    desc: "read tool result",         color: "bg-sky-500" },
+  { icon: BrainCircuit, label: "Iterate",    desc: "up to 7 times",            color: "bg-purple-500" },
+  { icon: Check,        label: "Answer",     desc: "Final Answer SSE",         color: "bg-green-500" },
+];
+
 function PipelineRow({ steps, title }: { steps: typeof INGEST_STEPS; title: string }) {
   return (
     <div className="mb-6">
@@ -249,7 +262,9 @@ function RAGPipeline() {
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm overflow-x-auto">
         <PipelineRow steps={INGEST_STEPS} title="① Ingestion (once per document)" />
         <div className="border-t border-dashed border-gray-200 my-4" />
-        <PipelineRow steps={QUERY_STEPS} title="② Query (every request)" />
+        <PipelineRow steps={QUERY_STEPS} title="② Chat Query (every request)" />
+        <div className="border-t border-dashed border-gray-200 my-4" />
+        <PipelineRow steps={AGENT_STEPS} title="③ Agent Mode — ReAct loop (multi-step)" />
       </div>
     </FadeIn>
   );
@@ -367,6 +382,21 @@ const FEATURES = [
     desc: "Multiple ChromaDB collections let you separate document sets and switch context in one click.",
     tags: [{ label: "Multi-tenant", color: "bg-pink-50 text-pink-600" }],
   },
+  {
+    icon: BrainCircuit, color: "bg-violet-500", title: "ReAct Agent Mode",
+    desc: "Autonomous reasoning loop — the agent thinks, picks a tool (docs / web / calculator), observes the result, and iterates up to 7 times before giving a final answer.",
+    tags: [{ label: "Agent", color: "bg-violet-50 text-violet-600" }],
+  },
+  {
+    icon: Search, color: "bg-rose-500", title: "Cross-Encoder Re-ranking",
+    desc: "Two-stage retrieval: fetch 3× candidates with dense search, then score every pair with ms-marco-MiniLM-L6-v2 to surface the most relevant chunks.",
+    tags: [{ label: "Precision", color: "bg-rose-50 text-rose-600" }],
+  },
+  {
+    icon: FileText, color: "bg-lime-600", title: "CV → Portfolio Generator",
+    desc: "Upload a PDF resume — pdfplumber extracts text and embedded photos, the LLM parses it into structured JSON, and it renders an animated portfolio page with a DiceBear avatar.",
+    tags: [{ label: "LLM Parsing", color: "bg-lime-50 text-lime-700" }],
+  },
 ];
 
 function WhatWeBuilt() {
@@ -374,7 +404,7 @@ function WhatWeBuilt() {
     <FadeIn className="mb-10">
       <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Features</div>
       <h2 className="text-2xl font-black text-gray-900 mb-1">What We Built</h2>
-      <p className="text-gray-500 text-sm mb-6">Eight production-grade capabilities, each independently useful.</p>
+      <p className="text-gray-500 text-sm mb-6">Eleven production-grade capabilities, each independently useful.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {FEATURES.map((f, i) => (
           <motion.div
@@ -459,6 +489,14 @@ const CONCEPTS = [
     what: "FastAPI's StreamingResponse with media_type='text/event-stream' writes 'data: {...}\\n\\n' lines as the LLM generates tokens. The React client reads these with a ReadableStream decoder. This also streams game setup status messages so users see progress.",
     why: "LLM inference takes 5-30 seconds. Without streaming the UI appears frozen. First-token latency under 500ms feels instant even if full completion takes longer.",
     when: "Any LLM integration, live progress updates, file processing status, real-time dashboards.",
+  },
+  {
+    icon: BrainCircuit, color: "text-violet-500",
+    title: "ReAct — Reasoning + Acting Agent Loop",
+    tldr: "The LLM alternates between thinking aloud and calling tools, looping until it has a confident answer.",
+    what: "ReAct structures LLM output as Thought → Action → Action Input. The backend parses this with regex, executes the named tool (ChromaDB search, DuckDuckGo, safe eval, or direct answer), and returns an Observation. The loop continues for up to MAX_ITERATIONS=7. Every step streams to the frontend as a typed SSE event.",
+    why: "Single-pass RAG retrieves once and hopes for the best. An agent can search documents, pivot to the web if docs are lacking, do math on the result, and only answer once all sub-questions are resolved. It can also self-correct — if a tool call returns nothing useful, it chooses a different tool or rephrases the query.",
+    when: "Complex questions requiring multiple sources or reasoning steps: 'Compare revenue in my uploaded report with today's market data.' or 'What is 15% of the total chunks indexed in this collection?'",
   },
   {
     icon: FlaskConical, color: "text-pink-500",
@@ -630,6 +668,10 @@ const PROOF_ITEMS = [
     proves: "React hooks, context API as event bus, custom async generators, Framer Motion animations, and Tailwind design systems." },
   { icon: Target,    color: "bg-pink-500",   skill: "Observability & Performance",
     proves: "You instrument pipelines (retrieval ms, LLM ms, relevance scores), persist metrics to SQLite, and surface them in a live dashboard." },
+  { icon: BrainCircuit, color: "bg-violet-500", skill: "Agentic AI & ReAct Pattern",
+    proves: "You can implement an autonomous reasoning loop, parse structured LLM output with regex, integrate multiple tools, and stream intermediate reasoning steps to the UI in real time." },
+  { icon: FileText,     color: "bg-lime-600",   skill: "LLM-Powered Document Parsing",
+    proves: "You can extract structured data from unstructured PDFs using an LLM, handle edge cases (missing fields, embedded images), and render the result as a dynamic UI — a real-world data extraction pipeline." },
 ];
 
 function ProofOfSkills() {
@@ -688,6 +730,10 @@ const INTERVIEW_QA = [
   {
     q: "What is BM25 and why did you use it in hybrid retrieval?",
     a: "BM25 ranks documents by term frequency (how often query terms appear) weighted by inverse document frequency (rarer terms score higher) with document length normalisation. Dense embeddings are great at semantic similarity but can miss exact matches — product codes, names, acronyms. Combining BM25 and dense scores with linear blending (alpha=0.5) gets the benefits of both. This is exactly what production search engines like Elasticsearch use.",
+  },
+  {
+    q: "What is the ReAct pattern and how did you implement it?",
+    a: "ReAct (Reasoning + Acting) is a prompting pattern where the LLM interleaves Thought steps and Action steps. My implementation: the system prompt instructs the LLM to always output Thought → Action → Action Input. I parse this with regex, execute the named tool — ChromaDB search, DuckDuckGo web search, safe eval for math, or direct answer — and inject the result back as an Observation. This loops up to MAX_ITERATIONS=7. If the LLM emits a Final Answer, the loop exits. Every step (thought, action, observation, answer) streams to the React frontend as a typed SSE event, so users see the reasoning trace in real time. It's essentially a miniature LangChain agent loop built from scratch.",
   },
 ];
 
@@ -784,12 +830,13 @@ function TechStack() {
 // ─── 11. what's next ──────────────────────────────────────────────────────
 
 const NEXT_ITEMS = [
-  { icon: Layers,    color: "text-purple-500", title: "Cross-Encoder Re-ranking",    desc: "Add a second-pass cross-encoder (ms-marco-MiniLM) to re-score retrieved chunks. Proven to improve MRR@10 by 15-25%." },
-  { icon: Brain,     color: "text-pink-500",   title: "Embedding Model Selection",   desc: "Let users pick from bge-small, e5-large, or nomic-embed-text at upload time with automatic re-index on change." },
-  { icon: FileText,  color: "text-blue-500",   title: "Multi-modal Ingestion",       desc: "URLs (BeautifulSoup), CSV (pandas), YouTube transcripts (yt-dlp), and images with OCR (pytesseract)." },
-  { icon: BarChart2, color: "text-green-500",  title: "Chunking × Strategy Matrix",  desc: "Track chunk strategy + retrieval strategy combinations in perf.db to find the optimal pairing per collection type." },
-  { icon: BookOpen,  color: "text-amber-500",  title: "Chat History Persistence",    desc: "Save conversations to SQLite with session IDs, exportable as JSON or markdown." },
-  { icon: Network,   color: "text-cyan-500",   title: "Multi-hop Retrieval",         desc: "Iterative retrieval where the LLM identifies gaps and makes additional search calls to fill them before answering." },
+  { icon: Brain,        color: "text-violet-500", title: "Agent Memory & Trace Store",  desc: "Persist agent reasoning traces to SQLite. Let the agent reference past tool calls and avoid redundant searches across sessions." },
+  { icon: Brain,        color: "text-pink-500",   title: "Embedding Model Selection",   desc: "Let users pick from bge-small, e5-large, or nomic-embed-text at upload time with automatic re-index on change." },
+  { icon: FileText,     color: "text-blue-500",   title: "Multi-modal Ingestion",       desc: "URLs (BeautifulSoup), CSV (pandas), YouTube transcripts (yt-dlp), and images with OCR (pytesseract)." },
+  { icon: BarChart2,    color: "text-green-500",  title: "Chunking × Strategy Matrix",  desc: "Track chunk strategy + retrieval strategy combinations in perf.db to find the optimal pairing per collection type." },
+  { icon: BookOpen,     color: "text-amber-500",  title: "Chat History Persistence",    desc: "Save conversations to SQLite with session IDs, exportable as JSON or markdown." },
+  { icon: BrainCircuit, color: "text-cyan-500",   title: "Structured Tool Calling",     desc: "Replace regex-parsed ReAct output with OpenAI-compatible function calling for more reliable tool dispatch and error recovery." },
+  { icon: FileText,     color: "text-lime-600",   title: "Portfolio AI Enhancement",    desc: "Add LLM-powered bullet rewriting, job description tailoring, and skill gap analysis to the CV → Portfolio generator." },
 ];
 
 function WhatsNext() {
@@ -839,9 +886,11 @@ export function Blueprint() {
         <FadeIn>
           <div className="text-center py-8 border-t border-gray-200">
             <p className="text-xs text-gray-400 font-mono">
-              Built with Ollama · ChromaDB · FastAPI · React · sentence-transformers
+              Built with Ollama / Groq · ChromaDB · FastAPI · React · sentence-transformers
             </p>
-            <p className="text-xs text-gray-300 mt-1 font-mono">100% local · no cloud APIs · no data leaves your machine</p>
+            <p className="text-xs text-gray-300 mt-1 font-mono">
+              Local mode: Ollama keeps all data on-device · Hosted mode: Groq cloud LLM, set <code className="text-brand-400">LLM_PROVIDER=groq</code> + <code className="text-brand-400">GROQ_API_KEY</code>
+            </p>
           </div>
         </FadeIn>
       </div>

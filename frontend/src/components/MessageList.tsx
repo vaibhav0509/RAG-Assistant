@@ -28,7 +28,14 @@ function SourcesPanel({ sources }: { sources: NonNullable<Message["sources"]> })
             <div key={i} className="bg-gray-50 rounded-md p-2 text-xs">
               <div className="flex justify-between mb-1">
                 <span className="font-medium text-gray-700 truncate">{s.source}</span>
-                <span className="text-gray-400 ml-2 shrink-0">score: {s.score}</span>
+                <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                  {(s as any).rerank_score !== undefined && (
+                    <span className="bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded font-semibold">
+                      ★ {(s as any).rerank_score.toFixed(3)}
+                    </span>
+                  )}
+                  <span className="text-gray-400">vec: {s.score}</span>
+                </div>
               </div>
               <p className="text-gray-500 line-clamp-3">{s.content}</p>
             </div>

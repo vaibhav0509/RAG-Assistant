@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 
 from app.models.schemas import ChatRequest, ChatResponse
 from app.services.retrieval import retrieve, RetrievalStrategy
+from app.services.reranker import rerank
 from app.services.llm import generate_answer, stream_answer
 from app.services.perf_db import init_perf_db, log_query
 from app.config import settings
@@ -19,11 +20,14 @@ async def chat(request: ChatRequest):
     strategy = RetrievalStrategy(request.retrieval_strategy)
     t_total = time.perf_counter()
 
+    # Fetch wider candidate pool when reranker is on
+    fetch_k = request.top_k * 3 if request.use_reranker else request.top_k
+
     sources, ret_meta = await retrieve(
         question=request.question,
         collection=request.collection,
         strategy=strategy,
-        top_k=request.top_k,
+        top_k=fetch_k,
         model=request.model,
     )
 
@@ -33,8 +37,13 @@ async def chat(request: ChatRequest):
             detail=f"No documents in '{request.collection}'. Upload documents first.",
         )
 
+    rerank_meta: dict = {"reranked": False, "rerank_ms": 0}
+    if request.use_reranker:
+        sources, rerank_meta = rerank(request.question, sources, request.top_k)
+
     history = [{"role": m.role, "content": m.content} for m in request.history]
     retrieval_ms = ret_meta.get("latency_ms", 0)
+    rerank_ms = rerank_meta.get("rerank_ms", 0)
 
     if request.stream:
         async def event_stream():
@@ -54,15 +63,15 @@ async def chat(request: ChatRequest):
                 top_k=request.top_k,
                 embedding_model=settings.embedding_model,
                 query_text=request.question,
-                retrieval_ms=retrieval_ms,
+                retrieval_ms=retrieval_ms + rerank_ms,
                 llm_ms=llm_ms,
                 total_ms=total_ms,
-                scores=[s["score"] for s in sources],
+                scores=[s.get("rerank_score", s["score"]) for s in sources],
                 chunks_retrieved=len(sources),
-                retrieval_steps=ret_meta.get("steps", []),
+                retrieval_steps=ret_meta.get("steps", []) + (["cross_encoder_rerank"] if request.use_reranker else []),
             )
 
-            yield f"data: {json.dumps({'done': True, 'sources': sources, 'perf': {'retrieval_ms': retrieval_ms, 'llm_ms': llm_ms, 'total_ms': total_ms, 'strategy': strategy.value, 'ret_meta': ret_meta}})}\n\n"
+            yield f"data: {json.dumps({'done': True, 'sources': sources, 'perf': {'retrieval_ms': retrieval_ms, 'rerank_ms': rerank_ms, 'llm_ms': llm_ms, 'total_ms': total_ms, 'strategy': strategy.value, 'reranked': request.use_reranker}})}\n\n"
 
         return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -77,12 +86,12 @@ async def chat(request: ChatRequest):
         top_k=request.top_k,
         embedding_model=settings.embedding_model,
         query_text=request.question,
-        retrieval_ms=retrieval_ms,
+        retrieval_ms=retrieval_ms + rerank_ms,
         llm_ms=llm_ms,
         total_ms=total_ms,
-        scores=[s["score"] for s in sources],
+        scores=[s.get("rerank_score", s["score"]) for s in sources],
         chunks_retrieved=len(sources),
-        retrieval_steps=ret_meta.get("steps", []),
+        retrieval_steps=ret_meta.get("steps", []) + (["cross_encoder_rerank"] if request.use_reranker else []),
     )
 
     return ChatResponse(answer=answer, sources=sources, collection=request.collection)

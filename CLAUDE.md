@@ -67,6 +67,8 @@ backend/
 │   ├── models/schemas.py         # Pydantic request/response schemas
 │   ├── api/routes/
 │   │   ├── chat.py               # POST /chat — SSE streaming, times retrieval+LLM, logs to perf_db
+│   │   ├── agent.py              # POST /agent — SSE streaming ReAct loop
+│   │   ├── portfolio.py          # POST /portfolio/parse — PDF upload → structured profile JSON
 │   │   ├── documents.py          # POST /documents/upload, DELETE /documents/{collection}
 │   │   ├── collections.py        # GET /collections
 │   │   ├── models.py             # GET /models (Ollama model list)
@@ -77,7 +79,10 @@ backend/
 │       ├── vector_store.py       # ChromaDB wrapper — add_documents(), query(), delete_collection()
 │       ├── document_processor.py # Text extraction (PDF/DOCX/TXT) + 4 chunking strategies
 │       ├── retrieval/engine.py   # 4 retrieval strategies (see below)
-│       ├── llm.py                # Ollama wrappers — generate_answer(), stream_answer()
+│       ├── llm.py                # Ollama/Groq wrappers — llm_complete(), stream_answer()
+│       ├── agent.py              # ReAct loop — run_agent() async generator, 4 tools, MAX_ITERATIONS=7
+│       ├── portfolio_parser.py   # PDF → text (pdfplumber) + photo extraction + LLM → structured JSON profile
+│       ├── reranker.py           # Cross-encoder re-ranking — CrossEncoder('cross-encoder/ms-marco-MiniLM-L6-v2')
 │       ├── perf_db.py            # SQLite perf logging — log_query(), get_perf_history(), get_strategy_stats()
 │       ├── game_db.py            # SQLite game sessions/rounds storage
 │       ├── question_generator.py # MCQ generation with streaming status updates
@@ -129,7 +134,7 @@ Four strategies selectable at upload time via `chunk_strategy` form field:
 
 ```
 frontend/src/
-├── App.tsx                       # Root — tabs (Chat/Game), model selector, monitor button, ProcessProvider
+├── App.tsx                       # Root — tabs (Chat/Quiz Game/Agent/Portfolio/Blueprint), model selector, monitor button, ProcessProvider
 ├── api/client.ts                 # All fetch calls — API key injected, streamChat() is async generator
 ├── context/ProcessContext.tsx    # Event bus for terminal monitor — useProcess() hook, log(tag, msg, status)
 ├── hooks/useChat.ts              # Chat state — sendMessage(), clearMessages(), logs events to ProcessContext
@@ -142,7 +147,9 @@ frontend/src/
     ├── ModelSelector.tsx         # Ollama model dropdown
     ├── Sidebar.tsx               # Left sidebar (collections list)
     ├── TerminalSidebar.tsx       # Right panel — LOG tab + PERFORMANCE tab
-    ├── Blueprint.tsx             # Third tab — interactive project showcase (see below)
+    ├── AgentPage.tsx             # Agent tab — ReAct loop UI with mini orbit spinner, ReAct explainer, step cards
+    ├── PortfolioPage.tsx         # Portfolio tab — upload PDF → LLM parses → animated portfolio page with DiceBear avatar
+    ├── Blueprint.tsx             # Blueprint tab — interactive project showcase (see below)
     └── game/
         ├── GamePage.tsx          # Quiz game orchestrator
         ├── TopicSetup.tsx        # Topic input + subtopic suggestion
@@ -156,7 +163,10 @@ frontend/src/
 
 **SSE streaming**: `streamChat()` in `client.ts` is an `async function*` that yields `{token}` events and a final `{done, sources, perf}` event.
 
-**Process monitor events**: Use `useProcess()` → `log(tag, message, status)`. Tags: `SYSTEM QUERY EMBED RETRIEVAL CONTEXT MODEL STREAM DONE WEB GAME ANSWER DB RAG`. Status: `info running success error warn`.
+**Process monitor events**: Use `useProcess()` → `log(tag, message, status)`. Tags: `SYSTEM QUERY EMBED RETRIEVAL CONTEXT MODEL STREAM DONE WEB GAME ANSWER DB RAG AGENT TOOL RESULT`. Status: `info running success error warn`.
+- `AGENT` (violet) — agent question, iteration thoughts, done/error
+- `TOOL` (amber) — tool name + input
+- `RESULT` (sky) — observation/tool result preview
 
 **Brand color**: `brand-500` / `brand-600` (configured in Tailwind — check `tailwind.config.js`).
 
@@ -223,6 +233,8 @@ All sections use `whileInView` scroll-triggered entrance animations. No addition
 | POST | `/api/v1/documents/upload` | ✓ | Upload + chunk + embed document |
 | DELETE | `/api/v1/documents/{col}` | ✓ | Delete collection |
 | POST | `/api/v1/chat` | ✓ | RAG query (streaming SSE or JSON) |
+| POST | `/api/v1/agent` | ✓ | ReAct agent loop (SSE — yields thought/action/observation/answer events) |
+| POST | `/api/v1/portfolio/parse` | ✓ | Upload PDF resume → returns structured profile JSON (name, experience, skills, links, photo) |
 | GET | `/api/v1/perf/history` | ✓ | Last 30 query perf records |
 | GET | `/api/v1/perf/stats` | ✓ | Aggregated stats by strategy |
 | POST | `/api/v1/game/suggest-subtopics` | ✓ | LLM-suggested subtopics for a topic |
@@ -235,11 +247,28 @@ All requests require header: `X-API-Key: enterprise-rag-secret`
 
 ---
 
-## Possible next features (discussed but not built)
+## Portfolio tab — CV → Portfolio
 
-- **Chunking strategy performance comparison** — track which chunk strategy + retrieval strategy combo performs best, surface in the performance tab
-- **Re-ranking with cross-encoder** — add a `CrossEncoder` re-ranker pass after initial retrieval
+- Upload any PDF resume → `pdfplumber` extracts text + embedded photo
+- LLM parses into structured JSON: name, title, summary, skills, experience, education, projects, certifications, links
+- If PDF has a photo → displayed as profile picture
+- If no photo → DiceBear avatar (gender-aware, name-seeded) — user can pick from 4 styles (Adventurer, Lorelei, Micah, Notionists)
+- Animated portfolio page: hero, skills, experience timeline, project cards, education, links
+- "Export PDF" button → `window.print()` with print-only CSS
+- Requires `pdfplumber>=0.11.0` in backend
+
+---
+
+## Already built (formerly "next features")
+
+- **Re-ranking with cross-encoder** — `services/reranker.py`, toggle in UI via `use_reranker` flag, fetches `top_k * 3` candidates
+- **ReAct Agent Mode** — `services/agent.py` + `api/routes/agent.py`, 4 tools, MAX_ITERATIONS=7, full SSE streaming
+
+## Possible next features
+
+- **Agent memory / trace store** — persist agent reasoning traces to SQLite across sessions
+- **Structured tool calling** — replace regex-parsed ReAct output with OpenAI-compatible function calling for more reliable dispatch
+- **Chunking strategy performance comparison** — track which chunk strategy + retrieval strategy combo performs best
 - **Non-text file ingestion** — CSV, URLs/web pages, YouTube transcripts, images (OCR)
 - **Chat history persistence** — save/load conversations
 - **Embedding model selection at upload time** — with re-index warning (currently hardcoded to `all-MiniLM-L6-v2`)
-- **Dark mode** for the frontend

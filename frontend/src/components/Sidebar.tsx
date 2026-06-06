@@ -8,9 +8,12 @@ interface Props {
   onSelectCollection: (name: string) => void;
 }
 
+const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api/v1";
+
 export function Sidebar({ activeCollection, onSelectCollection }: Props) {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeModel, setActiveModel] = useState<string>("");
 
   const load = async () => {
     setLoading(true);
@@ -26,6 +29,10 @@ export function Sidebar({ activeCollection, onSelectCollection }: Props) {
 
   useEffect(() => {
     load();
+    fetch(`${BASE}/status`, { headers: { "X-API-Key": "enterprise-rag-secret" } })
+      .then((r) => r.json())
+      .then((d) => { if (d.model) setActiveModel(d.model); })
+      .catch(() => {});
   }, []);
 
   const handleDelete = async (name: string, e: React.MouseEvent) => {
@@ -40,7 +47,9 @@ export function Sidebar({ activeCollection, onSelectCollection }: Props) {
     <aside className="w-64 bg-gray-900 text-white flex flex-col h-full">
       <div className="p-4 border-b border-gray-700">
         <h1 className="text-lg font-bold text-brand-500">RAG Assistant</h1>
-        <p className="text-xs text-gray-400 mt-1">Powered by Qwen + ChromaDB</p>
+        <p className="text-xs text-gray-400 mt-1">
+          Powered by <span className="text-gray-300 font-medium">{activeModel || "…"}</span> + ChromaDB
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">

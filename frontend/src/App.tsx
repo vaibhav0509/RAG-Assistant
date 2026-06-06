@@ -1,15 +1,17 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MessageSquare, Gamepad2, Terminal, Compass } from "lucide-react";
+import { MessageSquare, Gamepad2, Terminal, Compass, BrainCircuit, FileUser } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { Chat } from "./components/Chat";
 import { GamePage } from "./components/game/GamePage";
 import { Blueprint } from "./components/Blueprint";
+import { AgentPage } from "./components/AgentPage";
+import { PortfolioPage } from "./components/PortfolioPage";
 import { ModelSelector } from "./components/ModelSelector";
 import { TerminalSidebar } from "./components/TerminalSidebar";
 import { ProcessProvider, useProcess } from "./context/ProcessContext";
 
-type Tab = "chat" | "game" | "blueprint";
+type Tab = "chat" | "game" | "blueprint" | "agent" | "portfolio";
 
 function AppInner() {
   const { log } = useProcess();
@@ -31,7 +33,7 @@ function AppInner() {
   }, [selectedModel]);
 
   useEffect(() => {
-    const labels: Record<Tab, string> = { chat: "Chat", game: "Quiz Game", blueprint: "Blueprint" };
+    const labels: Record<Tab, string> = { chat: "Chat", game: "Quiz Game", blueprint: "Blueprint", agent: "Agent", portfolio: "Portfolio" };
     log("SYSTEM", `Switched to ${labels[tab]} mode`, "info");
   }, [tab]);
 
@@ -40,9 +42,11 @@ function AppInner() {
   }, []);
 
   const tabs: { id: Tab; label: string; icon: typeof MessageSquare }[] = [
-    { id: "chat",      label: "Chat",       icon: MessageSquare },
-    { id: "game",      label: "Quiz Game",  icon: Gamepad2      },
-    { id: "blueprint", label: "Blueprint",  icon: Compass       },
+    { id: "chat",      label: "Chat",       icon: MessageSquare  },
+    { id: "game",      label: "Quiz Game",  icon: Gamepad2       },
+    { id: "agent",     label: "Agent",      icon: BrainCircuit   },
+    { id: "portfolio", label: "Portfolio",  icon: FileUser       },
+    { id: "blueprint", label: "Blueprint",  icon: Compass        },
   ];
 
   return (
@@ -87,16 +91,24 @@ function AppInner() {
           </div>
         </header>
 
-        {/* Content + terminal sidebar */}
+        {/* Content + terminal sidebar — all tabs stay mounted to preserve state */}
         <div className="flex-1 flex overflow-hidden min-w-0">
-          <div className="flex-1 flex overflow-hidden min-w-0">
-            {tab === "chat" ? (
+          <div className="flex-1 flex overflow-hidden min-w-0 relative">
+            <div className={`absolute inset-0 flex overflow-hidden ${tab === "chat"      ? "" : "invisible pointer-events-none"}`}>
               <Chat collection={collection} onCollectionChange={handleCollectionChange} model={selectedModel} />
-            ) : tab === "game" ? (
+            </div>
+            <div className={`absolute inset-0 flex overflow-hidden ${tab === "game"      ? "" : "invisible pointer-events-none"}`}>
               <GamePage model={selectedModel} collection={collection} />
-            ) : (
+            </div>
+            <div className={`absolute inset-0 flex overflow-hidden ${tab === "agent"     ? "" : "invisible pointer-events-none"}`}>
+              <AgentPage collection={collection} model={selectedModel} />
+            </div>
+            <div className={`absolute inset-0 flex overflow-hidden ${tab === "portfolio" ? "" : "invisible pointer-events-none"}`}>
+              <PortfolioPage />
+            </div>
+            <div className={`absolute inset-0 flex overflow-hidden ${tab === "blueprint" ? "" : "invisible pointer-events-none"}`}>
               <Blueprint />
-            )}
+            </div>
           </div>
           <TerminalSidebar open={terminalOpen} onClose={() => setTerminalOpen(false)} />
         </div>

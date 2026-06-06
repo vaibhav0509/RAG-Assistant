@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import documents, chat, collections, models, game, status, perf
+from app.api.routes import documents, chat, collections, models, game, status, perf, agent, portfolio
 from app.config import settings
 
 app = FastAPI(
@@ -47,6 +47,8 @@ app.include_router(models.router, prefix="/api/v1")
 app.include_router(game.router, prefix="/api/v1")
 app.include_router(status.router, prefix="/api/v1")
 app.include_router(perf.router, prefix="/api/v1")
+app.include_router(agent.router, prefix="/api/v1")
+app.include_router(portfolio.router, prefix="/api/v1")
 
 
 @app.get("/")
