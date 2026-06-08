@@ -482,9 +482,8 @@ html = f"""<!DOCTYPE html>
   <p class="cover-badge">Technical Deep-Dive</p>
   <h1>AI Studio<br/><span>Understanding the Full Project</span></h1>
   <p class="cover-subtitle">
-    A plain-English guide to every tool, concept, and engineering
-    decision in the AI Studio codebase — from embeddings to
-    multi-agent orchestration.
+    Everything you need to understand, explain, and own this project —
+    written in plain English, no ML degree required.
   </p>
   <div class="cover-divider"></div>
   <div style="margin-bottom: 32pt;">
