@@ -120,8 +120,9 @@ function IconNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
 
       {/* Footer */}
       {!collapsed && (
-        <div className="border-t border-slate-700/60 py-3 shrink-0">
-          <p className="px-4 text-[10px] text-slate-500 font-mono">10 tools · 1 codebase</p>
+        <div className="border-t border-slate-700/60 py-3 px-4 shrink-0">
+          <p className="text-[11px] font-semibold text-slate-300 truncate">Vaibhav Mishra</p>
+          <p className="text-[10px] text-slate-500 font-mono mt-0.5">frontend dev · building with AI</p>
         </div>
       )}
     </nav>
