@@ -316,11 +316,11 @@ function ArchDiagram() {
 
         <div className="mt-5 border-t border-gray-100 pt-4 grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
           {[
-            { label: "Auth",        desc: "X-API-Key middleware",     icon: ShieldCheck, color: "text-red-500" },
-            { label: "Streaming",   desc: "SSE / async generators",   icon: Zap,         color: "text-amber-500" },
-            { label: "Embeddings",  desc: "sentence-transformers",    icon: Brain,       color: "text-pink-500" },
-            { label: "BM25 Index",  desc: "rank-bm25 on candidates",  icon: Search,      color: "text-blue-500" },
-            { label: "Perf Log",    desc: "SQLite query_perf table",  icon: BarChart2,   color: "text-green-500" },
+            { label: "Auth",        desc: "X-API-Key middleware",        icon: ShieldCheck, color: "text-red-500"    },
+            { label: "Rate Limit",  desc: "100 req/day · UUID · SQLite", icon: Network,     color: "text-teal-500"   },
+            { label: "Streaming",   desc: "SSE / async generators",      icon: Zap,         color: "text-amber-500"  },
+            { label: "Embeddings",  desc: "sentence-transformers",       icon: Brain,       color: "text-pink-500"   },
+            { label: "Perf Log",    desc: "SQLite query_perf table",     icon: BarChart2,   color: "text-green-500"  },
           ].map((item, i) => (
             <motion.div
               key={item.label}
@@ -434,6 +434,18 @@ const FEATURES = [
     tags: [{ label: "DevOps", color: "bg-gray-100 text-gray-700" }],
     proves: "Containerised deployment + infrastructure-as-code",
   },
+  {
+    icon: GitBranch, color: "bg-rose-600", title: "Agent Workflow Builder",
+    desc: "React Flow canvas to chain AI nodes — Input, LLM, Retrieval, Web Search, Transform, Output. DAG topological execution with SSE per-node streaming and save/load JSON.",
+    tags: [{ label: "Visual AI", color: "bg-rose-50 text-rose-600" }],
+    proves: "Visual DAG execution + React Flow integration + no-code AI pipelines",
+  },
+  {
+    icon: ShieldCheck, color: "bg-teal-600", title: "Rate Limiting + UUID Isolation",
+    desc: "SQLite-backed 100 requests/day per browser UUID. X-User-ID header auto-generated in localStorage. Covers all LLM endpoints. Resets at midnight with zero config.",
+    tags: [{ label: "Security", color: "bg-teal-50 text-teal-700" }],
+    proves: "Stateless rate limiting + multi-user isolation without login",
+  },
 ];
 
 function WhatWeBuilt() {
@@ -441,7 +453,7 @@ function WhatWeBuilt() {
     <FadeIn className="mb-10">
       <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Features</div>
       <h2 className="text-2xl font-black text-gray-900 mb-1">What We Built</h2>
-      <p className="text-gray-500 text-sm mb-6">Fifteen production-grade capabilities, each independently useful.</p>
+      <p className="text-gray-500 text-sm mb-6">Seventeen production-grade capabilities, each independently useful.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {FEATURES.map((f, i) => (
           <motion.div

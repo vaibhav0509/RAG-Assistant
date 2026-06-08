@@ -1,9 +1,19 @@
 const API_KEY = "enterprise-rag-secret";
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api/v1";
 
+function getUserId(): string {
+  let id = localStorage.getItem("user_id");
+  if (!id) {
+    id = crypto.randomUUID().slice(0, 8);
+    localStorage.setItem("user_id", id);
+  }
+  return id;
+}
+
 const headers = () => ({
   "X-API-Key": API_KEY,
   "Content-Type": "application/json",
+  "X-User-ID": getUserId(),
 });
 
 export async function fetchModels() {
@@ -25,7 +35,7 @@ export async function uploadDocument(file: File, collection: string, chunkStrate
   form.append("chunk_strategy", chunkStrategy);
   const res = await fetch(`${BASE}/documents/upload`, {
     method: "POST",
-    headers: { "X-API-Key": API_KEY },
+    headers: { "X-API-Key": API_KEY, "X-User-ID": getUserId() },
     body: form,
   });
   if (!res.ok) {
@@ -95,7 +105,7 @@ export async function parsePortfolio(file: File) {
   form.append("file", file);
   const res = await fetch(`${BASE}/portfolio/parse`, {
     method: "POST",
-    headers: { "X-API-Key": API_KEY },
+    headers: { "X-API-Key": API_KEY, "X-User-ID": getUserId() },
     body: form,
   });
   if (!res.ok) {
@@ -321,6 +331,54 @@ export async function visualizeChunks(payload: {
   });
   if (!res.ok) throw new Error("Failed to visualize chunks");
   return res.json();
+}
+
+// ── Workflow API ──────────────────────────────────────────────────────────────
+
+export interface WorkflowEvent {
+  type: "start" | "node_start" | "node_done" | "node_error" | "error" | "done";
+  node_id?: string;
+  node_type?: string;
+  label?: string;
+  output?: string;
+  message?: string;
+  total?: number;
+  order?: string[];
+  outputs?: Record<string, string>;
+}
+
+export async function* streamWorkflow(payload: {
+  nodes: { id: string; type: string; config: Record<string, string | number> }[];
+  edges: { source: string; target: string }[];
+  input: string;
+  collection?: string;
+  model?: string;
+}): AsyncGenerator<WorkflowEvent> {
+  const res = await fetch(`${BASE}/workflow/run`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Workflow run failed");
+  }
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const raw = line.slice(6);
+      if (raw === "[DONE]") return;
+      yield JSON.parse(raw) as WorkflowEvent;
+    }
+  }
 }
 
 export async function* streamEval(payload: {

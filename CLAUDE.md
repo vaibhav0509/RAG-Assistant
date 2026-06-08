@@ -2,7 +2,7 @@
 
 ## Project overview
 
-**AI Studio** — a full-stack local AI workspace with six tools: RAG Chat, ReAct Agent, Quiz Game, CV→Portfolio builder, RAG Evaluation, and a Blueprint docs page. Starts with a homepage that explains every feature. Originally a pure RAG assistant, now a multi-tool AI playground.
+**AI Studio** — a full-stack local AI workspace with nine panels: Home, RAG Chat, ReAct Agent, Quiz Game, CV→Portfolio builder, RAG Evaluation, Visualize, Agent Workflow Builder, and Blueprint. Starts with a homepage that explains every feature. Originally a pure RAG assistant, now a multi-tool AI playground.
 
 LLM inference: **Ollama** (local, default) or **Groq** (cloud, set `LLM_PROVIDER=groq` + `GROQ_API_KEY`). Vector storage: **ChromaDB**. Frontend: **React + Vite**.
 
@@ -165,7 +165,7 @@ Four strategies selectable at upload time via `chunk_strategy` form field:
 
 ```
 frontend/src/
-├── App.tsx                       # Root — IconNav (desktop) + MobileNav (bottom bar), all 8 tabs CSS-mounted, ProcessProvider
+├── App.tsx                       # Root — IconNav collapsible sidebar (desktop) + MobileNav scrollable bottom bar, all 9 tabs CSS-mounted, ProcessProvider
 ├── api/client.ts                 # All fetch calls — API key injected, streamChat(), streamAgent(), streamEval(), parsePortfolio(), fetchEmbeddingPoints(), inspectContext(), visualizeChunks()
 ├── context/ProcessContext.tsx    # Event bus for terminal monitor — useProcess() hook, log(tag, msg, status)
 ├── hooks/useChat.ts              # Chat state — sendMessage(), clearMessages(), logs events to ProcessContext
@@ -183,6 +183,7 @@ frontend/src/
     ├── PortfolioPage.tsx         # Portfolio tab — upload PDF → parse → template picker → animated portfolio
     ├── EvalPage.tsx              # Eval tab — question input, strategy config, SSE streaming results, stop button, aggregate bars
     ├── VisualizePage.tsx         # Visualize tab — 3 sub-tabs: Embedding scatter (PCA+SVG), Context Inspector, Chunking Visualizer
+    ├── WorkflowPage.tsx          # Workflow tab — React Flow canvas, 6 custom node types, config panel, SSE run, save/load JSON
     ├── Blueprint.tsx             # Blueprint tab — 9-section docs page with scrollspy TOC (see below)
     └── game/
         ├── GamePage.tsx          # Quiz game orchestrator
@@ -196,17 +197,17 @@ frontend/src/
 ### Layout architecture
 
 ```
-[IconNav 60px dark] | [Sidebar? (chat+desktop only)] | [Tab panels — absolute inset-0, CSS invisible/pointer-events-none] | [TerminalSidebar 320px]
+[IconNav 200px/60px slate-900] | [Sidebar? (chat+desktop only)] | [Tab panels — absolute inset-0, CSS invisible/pointer-events-none] | [TerminalSidebar 320px]
                                                                                     ↕
-                                                              [MobileNav fixed bottom — md:hidden]
+                                                              [MobileNav fixed bottom scrollable — md:hidden]
 ```
 
-- **Tab persistence**: All 8 tabs (including home) are always mounted. Inactive tabs use `invisible pointer-events-none` (not unmounted) to preserve component state across tab switches.
+- **Tab persistence**: All 9 tabs (including home) are always mounted. Inactive tabs use `invisible pointer-events-none` (not unmounted) to preserve state. **Exception**: `<ReactFlow>` inside WorkflowPage renders conditionally via `active` prop — React Flow's CSS sets `pointer-events: all` on nodes which overrides parent's `pointer-events: none`.
 - **Default tab**: `"home"` — app opens on the welcome page.
-- **Home navigation**: The Zap logo in the desktop `IconNav` and the mobile header are buttons that navigate to `"home"`. Home is NOT in the `TABS` array so it has no bottom-nav slot on mobile.
-- **Collections Sidebar**: Conditionally rendered at App level — only when `tab === "chat"` AND on desktop (`hidden md:flex`).
-- **Mobile bottom nav**: Fixed bar with 6 feature tab icons + monitor toggle. Content area uses `mb-16 md:mb-0` to avoid overlap.
-- **Desktop icon nav**: 60px `bg-gray-950` sidebar with tooltip on hover (label + hint text). Monitor toggle at bottom.
+- **Home navigation**: The Zap logo in the expanded sidebar (or ChevronRight button in collapsed sidebar) navigates to `"home"`.
+- **Collections Sidebar**: Conditionally rendered at App level — only when `tab === "chat"` AND on desktop.
+- **Mobile bottom nav**: `bg-slate-900` dark bar, horizontally scrollable (`overflow-x-auto`), `flex-none min-w-[64px]` per item. Active tab shows feature accent color + colored underline dot.
+- **Desktop sidebar nav**: `bg-slate-900`, 200px expanded (icon + label + hint) / 60px collapsed (icon only + tooltip). Collapsed logo slot becomes a `ChevronRight` expand button — no need to scroll to footer. Each tab has a unique accent color (`text-{color}` on icon, `border-{color}` left border when active). Active item: `bg-white/10 text-white` for clear contrast regardless of accent color.
 - **App name**: "AI Studio" (updated from "RAG Assistant" everywhere including log messages).
 
 ### Key patterns
@@ -387,12 +388,14 @@ Run: `/Users/vaibhavmishra/Desktop/enterprise-rag/backend/.venv/bin/python3.14 -
 - **Re-ranking with cross-encoder** — `services/reranker.py`, toggle via `use_reranker` flag, fetches `top_k * 3` candidates
 - **ReAct Agent Mode** — `services/agent.py` + `api/routes/agent.py`, 4 tools, MAX_ITERATIONS=7, full SSE streaming
 - **CV → Portfolio (all 5 templates)** — `services/portfolio_parser.py`, Basic / Creative / Dark / Old School / 90's all live with template picker; Fun ↔ Chaos toggle on 90's; green ↔ amber toggle on Dark
-- **AI Studio rebrand** — renamed from "RAG Assistant"; icon sidebar nav (desktop) + bottom tab bar (mobile); fully responsive layout
+- **AI Studio rebrand** — renamed from "RAG Assistant"; collapsible labeled sidebar nav (desktop, `bg-slate-900`, 200px expanded/60px collapsed, per-feature accent colors, `bg-white/10` active highlight) + scrollable dark bottom tab bar (mobile); fully responsive layout
 - **RAG Evaluation tab** — `EvalPage.tsx` + `/api/v1/eval/run`; 3 metrics, SSE streaming with per-question 90s timeout, stop button, aggregate summary
 - **pytest test suite** — 39 tests, 3 files, mocked ML deps; run in < 2 seconds
 - **Docker Compose** — one-command `docker compose up --build` for both services with health checks
 - **Home/Welcome page** — `HomePage.tsx`; hero banner, 3-step quick start, 6 feature cards (with prereq warnings), backend troubleshooting footer; default tab on app load; accessible via Zap logo on desktop and mobile
 - **Visualize tab** — `VisualizePage.tsx` + `/api/v1/visualize/*`; 3 sub-tools: Embedding scatter (PCA 2D, pan/zoom SVG, hover tooltip), Context Window Inspector (prompt breakdown with token counts per section), Chunking Visualizer (all 4 strategies on same text, side-by-side stats)
+- **Rate limiting** — `services/rate_limiter.py`; SQLite-backed 100 req/day per UUID; `X-User-ID` header from `localStorage`; covers all LLM endpoints; resets at midnight automatically
+- **Agent Workflow Builder** — `WorkflowPage.tsx` + `services/workflow_engine.py` + `/api/v1/workflow/run`; React Flow canvas with 6 node types (Input, LLM, Retrieval, Web Search, Transform, Output); topological DAG execution; SSE streaming per-node status; config panel; save/load JSON; default RAG+Web pipeline pre-loaded
 
 ## Possible next features
 

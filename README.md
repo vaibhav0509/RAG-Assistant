@@ -4,7 +4,7 @@
 
 # AI Studio
 
-**A full-stack local AI workspace — six tools, one codebase, zero cloud dependencies.**
+**A full-stack local AI workspace — nine tools, one codebase, zero cloud dependencies.**
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-rag--assistant--pro.vercel.app-6366f1?style=for-the-badge&logo=vercel&logoColor=white)](https://rag-assistant-pro.vercel.app/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -21,7 +21,7 @@
 
 ## What is this?
 
-AI Studio started as a RAG chatbot and grew into a six-tool AI playground — all running locally with Ollama or in the cloud with Groq, using the same codebase. No OpenAI. No API bills. No data leaving your machine (unless you want it to).
+AI Studio started as a RAG chatbot and grew into a nine-tool AI playground — all running locally with Ollama or in the cloud with Groq, using the same codebase. No OpenAI. No API bills. No data leaving your machine (unless you want it to).
 
 Open the app and a welcome screen explains every tool and when to use it — no need to read docs before you start.
 
@@ -33,7 +33,7 @@ It's both a functional AI toolkit and a showcase of production-grade AI/ML engin
 
 ---
 
-## 🛠️ Eight Panels in One
+## 🛠️ Nine Panels in One
 
 ### 🏠 Welcome Home
 Opens by default. Explains every tool with feature cards, a 3-step quick start, and a backend troubleshooting hint. No need to read Blueprint first.
@@ -59,6 +59,9 @@ Three tools that make the invisible visible:
 - **Context Window Inspector** — Before the LLM answers, see exactly what goes into its prompt: system prompt, each retrieved chunk with its relevance score, and your question — all with token counts and a colour-coded usage bar.
 - **Chunking Visualizer** — Paste any text and see it split by all 4 strategies simultaneously. Compare chunk count, average size, and boundary placement side by side.
 
+### 🔀 Agent Workflow Builder
+Visual drag-and-drop canvas (React Flow) to chain AI operations without writing code. Six node types: **Input**, **LLM Call**, **Retrieval**, **Web Search**, **Transform**, **Output**. Connect them into a DAG, hit Run, and watch each node execute in real time with SSE streaming. Nodes light up green as they complete. Use `{{nodeId}}` in LLM prompts to inject upstream outputs. Save and load pipelines as JSON. Ships with a default RAG + Web Search pipeline pre-loaded.
+
 ### 📐 Blueprint
 An interactive docs page explaining every architectural decision — with a **Setup Guide** section (prerequisites, Docker + local dev commands, env vars table), live system metrics, pipeline diagrams, concept explainers, retrieval strategy comparisons, and an interview cheat sheet.
 
@@ -78,7 +81,9 @@ An interactive docs page explaining every architectural decision — with a **Se
 | **Performance Analytics** | Every query logged: retrieval ms · LLM ms · relevance score |
 | **5 Portfolio Templates** | Basic · Creative · Dark/Terminal · Old School · 90's GeoCities |
 | **Local + Cloud LLM** | Ollama on-device or Groq cloud — same API surface |
-| **Fully Responsive** | Icon sidebar on desktop · bottom tab bar on mobile |
+| **Fully Responsive** | Collapsible labeled sidebar (200px/60px, per-feature accent colors) · scrollable dark bottom tab bar on mobile |
+| **Agent Workflow Builder** | React Flow canvas · 6 node types · DAG execution · SSE per-node streaming · save/load JSON |
+| **Rate Limiting** | SQLite 100 req/day per UUID · X-User-ID header · auto-resets at midnight |
 | **39 pytest tests** | Chunking strategies · retrieval helpers · API endpoints with mocked services |
 
 ---
@@ -100,7 +105,7 @@ An interactive docs page explaining every architectural decision — with a **Se
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                    Browser (React 18 + Vite)              │
-│  IconNav │ Home │ Chat │ Agent │ Quiz │ Portfolio │ Eval │    │
+│  Home │ Chat │ Agent │ Quiz │ Portfolio │ Eval │ Visualize │ Workflow │ Blueprint │
 │          │          SSE Streaming ←→                      │
 └──────────────────────────┬───────────────────────────────┘
                            │ /api/v1/* (X-API-Key)
@@ -110,8 +115,8 @@ An interactive docs page explaining every architectural decision — with a **Se
 │  Auth middleware · Async routes · Pydantic validation     │
 │                                                           │
 │  ┌─────────────┐  ┌────────────┐  ┌──────────────────┐  │
-│  │  ChromaDB   │  │   Ollama   │  │  SQLite          │  │
-│  │  Vector DB  │  │  LLM :11434│  │  perf.db game.db │  │
+│  │  ChromaDB   │  │   Ollama   │  │  SQLite                    │  │
+│  │  Vector DB  │  │  LLM :11434│  │  perf.db · game.db · rate  │  │
 │  └─────────────┘  └────────────┘  └──────────────────┘  │
 │  ┌──────────────────────────────────────────────────┐    │
 │  │  sentence-transformers (all-MiniLM-L6-v2)        │    │
@@ -292,13 +297,15 @@ RAG-Assistant/
 │       │   ├── retrieval/       # 4 retrieval strategies
 │       │   ├── vector_store.py  # ChromaDB wrapper
 │       │   ├── agent.py         # ReAct loop — MAX_ITERATIONS=7
+│       │   ├── workflow_engine.py  # DAG executor — topo sort + SSE per-node streaming
+│       │   ├── rate_limiter.py  # SQLite 100 req/day per UUID, auto-resets at midnight
 │       │   ├── portfolio_parser.py  # PDF → LLM → JSON
 │       │   ├── reranker.py      # Cross-encoder re-ranking
 │       │   └── eval_metrics.py  # context_relevance · answer_relevance · faithfulness
 │       └── main.py              # FastAPI app + auth middleware
 └── frontend/
     └── src/
-        ├── App.tsx              # Layout — icon nav + 8 tab panels (home default, logo → home)
+        ├── App.tsx              # Layout — collapsible sidebar nav + 9 tab panels (home default, logo → home)
         ├── api/client.ts        # Typed fetch wrappers + SSE generators: streamChat · streamAgent · streamEval · visualize
         ├── context/             # ProcessContext — real-time event bus
         └── components/
@@ -308,6 +315,7 @@ RAG-Assistant/
             ├── PortfolioPage.tsx # 5 templates: Basic · Creative · Dark · OldSchool · 90's
             ├── EvalPage.tsx     # RAG eval — SSE streaming results, 90s timeout, stop button
             ├── VisualizePage.tsx # Embedding scatter · Context inspector · Chunking visualizer
+            ├── WorkflowPage.tsx # React Flow canvas · 6 node types · DAG execution · SSE streaming
             ├── Blueprint.tsx    # 8-section docs with scrollspy
             ├── TerminalSidebar.tsx
             └── game/            # Quiz game components

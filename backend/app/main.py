@@ -2,8 +2,21 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import documents, chat, collections, models, game, status, perf, agent, portfolio, eval, visualize
+from app.api.routes import documents, chat, collections, models, game, status, perf, agent, portfolio, eval, visualize, workflow
 from app.config import settings
+from app.services.rate_limiter import check_and_increment
+
+_RATE_LIMITED_PATHS = {
+    "/api/v1/chat",
+    "/api/v1/agent",
+    "/api/v1/eval/run",
+    "/api/v1/portfolio/parse",
+    "/api/v1/game/start",
+    "/api/v1/game/suggest-subtopics",
+    "/api/v1/game/answer",
+    "/api/v1/visualize/context",
+    "/api/v1/workflow/run",
+}
 
 app = FastAPI(
     title="Enterprise RAG Assistant",
@@ -37,6 +50,15 @@ async def api_key_guard(request: Request, call_next):
     if key != settings.api_key:
         return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
 
+    if request.url.path in _RATE_LIMITED_PATHS:
+        user_id = request.headers.get("X-User-ID", "anonymous")
+        allowed, count = check_and_increment(user_id)
+        if not allowed:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": f"Daily limit of 100 requests reached. Resets at midnight. Used: {count}"},
+            )
+
     return await call_next(request)
 
 
@@ -51,6 +73,7 @@ app.include_router(agent.router, prefix="/api/v1")
 app.include_router(portfolio.router, prefix="/api/v1")
 app.include_router(eval.router, prefix="/api/v1")
 app.include_router(visualize.router, prefix="/api/v1")
+app.include_router(workflow.router, prefix="/api/v1")
 
 
 @app.get("/")

@@ -2,10 +2,10 @@ import { motion } from "framer-motion";
 import {
   MessageSquare, BrainCircuit, Gamepad2, FileUser,
   FlaskConical, Compass, Upload, Search, Sparkles,
-  ArrowRight, Telescope,
+  ArrowRight, Telescope, GitBranch,
 } from "lucide-react";
 
-type Tab = "chat" | "agent" | "game" | "portfolio" | "eval" | "blueprint" | "visualize";
+type Tab = "chat" | "agent" | "game" | "portfolio" | "eval" | "blueprint" | "visualize" | "workflow";
 
 interface FeatureCard {
   id: Tab;
@@ -74,6 +74,15 @@ const FEATURES: FeatureCard[] = [
     title: "CV → Portfolio",
     description: "Upload a PDF resume and get an animated portfolio website in seconds. Five visual templates from clean professional to 90s GeoCities chaos.",
     when: "When you want to turn a plain resume into a shareable, styled portfolio page without writing any HTML.",
+  },
+  {
+    id: "workflow",
+    icon: GitBranch,
+    color: "text-rose-600",
+    bg: "bg-rose-50 border-rose-200",
+    title: "Workflow Builder",
+    description: "Drag-and-drop canvas to chain AI nodes: Input → Retrieval → Web Search → LLM → Output. Build, run, and save custom pipelines visually.",
+    when: "When you want to combine multiple AI steps — e.g. search docs + search web → merge → LLM answer — without writing code.",
   },
   {
     id: "blueprint",
