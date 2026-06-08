@@ -730,7 +730,7 @@ const INTERVIEW_QA = [
   },
   {
     q: "How would you productionise this system?",
-    a: "Add authentication (JWT not just API key), rate limiting, and multi-tenant collection isolation. Move ChromaDB to a managed vector store (Pinecone/Weaviate) with replication. Add a re-ranker (cross-encoder) after retrieval for better precision. Cache embeddings for repeated queries. Add a proper observability stack (OpenTelemetry → Grafana). Replace SQLite with Postgres for concurrent writes. Add a queue for async document ingestion.",
+    a: "Several production concerns are already addressed: rate limiting (SQLite 100 req/day per UUID), cross-encoder re-ranking, and Docker Compose deployment. The next tier: replace the API key with JWT for per-user auth, move ChromaDB to a managed vector store (Pinecone/Weaviate) with replication, cache embeddings for repeated queries with a Redis layer, add OpenTelemetry → Grafana for proper observability, replace SQLite with Postgres for concurrent writes, and add a job queue (Celery/ARQ) for async document ingestion at scale.",
   },
   {
     q: "What is BM25 and why did you use it in hybrid retrieval?",
@@ -748,6 +748,22 @@ const INTERVIEW_QA = [
     q: "How did you approach testing a system that relies on ML models?",
     a: "The key insight is that ML model loading needs to be decoupled from the API logic under test. In conftest.py I patch sentence_transformers into sys.modules before any app module is imported — so SentenceTransformer() and CrossEncoder() return mocks that produce deterministic numpy arrays, never touching disk. ChromaDB uses a real ephemeral store at /tmp/ so persistence logic is exercised without polluting the dev database. LLM calls (Groq) are mocked per-test with AsyncMock so tests run without an API key. This gives 39 tests in ~1.5 seconds: chunking strategies are pure Python with no mocking needed, helper functions like _normalize and _rrf are unit-tested directly, and API endpoints are tested via FastAPI's TestClient with service-layer patches.",
   },
+  {
+    q: "Walk me through how the Agent Workflow Builder works end-to-end.",
+    a: "The frontend uses React Flow for the canvas. Each node is a custom component registered via nodeTypes — it renders a coloured header, a body that shows either a description or live output preview, and source/target handles. State (nodes, edges) lives in useNodesState/useEdgesState hooks which persist across tab switches even when the ReactFlow canvas is conditionally unmounted. We had to conditionally unmount React Flow when the tab is inactive because its CSS sets pointer-events: all on nodes, which punches through the parent's pointer-events: none. On Run, the frontend serialises the node/edge graph and POSTs to /workflow/run. The backend runs Kahn's topological sort to find a valid execution order, then executes each node in sequence — Input passes through the user's text, Retrieval hits ChromaDB, Web Search calls DuckDuckGo, LLM calls the model with {{nodeId}} variable substitution in prompts, Transform joins/truncates/templates multiple inputs. Every node emits SSE events: node_start, node_done (with output), or node_error — the frontend updates each node's visual status in real time.",
+  },
+  {
+    q: "How did you implement rate limiting without Redis?",
+    a: "SQLite is sufficient for single-instance deployments. The rate_limits table has a compound primary key (user_id, date). Each request does a SELECT to read the current count, and if below the limit, an INSERT ... ON CONFLICT DO UPDATE SET count = count + 1. Auto-reset is free — a new calendar date means a new row, so yesterday's count is never touched. The user_id comes from an X-User-ID header, generated as a crypto.randomUUID().slice(0, 8) in localStorage on first visit — no login required. Rate limiting is enforced in FastAPI middleware after API key auth, covering all LLM endpoints: chat, agent, eval, portfolio, game, workflow. The tradeoff vs Redis: SQLite can't scale across multiple processes or machines, but for a single-server deployment it's zero-config and consistent. For multi-instance, you'd swap the SQLite check for a Redis INCR with EXPIRE.",
+  },
+  {
+    q: "How did you visualise the embedding space, and what insights does it give?",
+    a: "ChromaDB returns raw embedding vectors on col.get(include=['embeddings']). These are 384-dimensional (all-MiniLM-L6-v2). I run sklearn PCA(n_components=2) to project them to 2D, fit_transform on all chunk embeddings, then optionally transform a query embedding into the same space. The scatter plot is SVG-based with a viewBox pan/zoom system — wheel events adjust the viewBox dimensions (zoom), drag events translate the origin (pan). Each point is coloured by source document. When you type a query, its projected point renders as a red square — you can literally see whether your query lands near the relevant document cluster or is far off. The most valuable insight: if your chunks are all compressed into one dense blob with no separation, your chunking strategy is losing document-level structure and retrieval will be poor. Widely separated, well-labelled clusters are what you want to see.",
+  },
+  {
+    q: "How did you extract structured data from an unstructured PDF resume?",
+    a: "Two stages: extraction then parsing. pdfplumber extracts raw text page-by-page and also finds embedded images (for the profile photo) using page.images. The raw text is passed to the LLM with a system prompt that instructs it to output only a JSON object matching a specific schema — name, title, summary, skills array, experience array with company/role/dates/bullets, education, projects, certifications, links. The JSON is parsed with json.loads and validated against a Pydantic model. Failure modes: the LLM occasionally wraps the JSON in markdown fences, so we strip ```json``` blocks before parsing. If no photo is found in the PDF, the frontend falls back to a DiceBear SVG avatar seeded from the person's name — consistent across renders. The same parsed profile JSON drives five completely different visual templates in the frontend, proving that clean structured extraction decouples data from presentation.",
+  },
 ];
 
 function InterviewPrep() {
@@ -761,7 +777,7 @@ function InterviewPrep() {
           <span className="text-xs font-bold tracking-widest text-brand-400 uppercase">Interview Ready</span>
         </div>
         <h2 className="text-2xl font-black text-white mb-1">Cheat Sheet</h2>
-        <p className="text-gray-400 text-sm mb-6">9 questions interviewers ask about AI/ML systems. Click to reveal a model answer.</p>
+        <p className="text-gray-400 text-sm mb-6">13 questions interviewers ask about AI/ML systems. Click to reveal a model answer.</p>
         <div className="space-y-2">
           {INTERVIEW_QA.map((item, i) => (
             <div key={i} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800">
