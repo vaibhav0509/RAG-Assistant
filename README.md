@@ -13,9 +13,11 @@
 [![Ollama](https://img.shields.io/badge/Ollama-local%20LLM-f97316?style=for-the-badge)](https://ollama.com/)
 [![ChromaDB](https://img.shields.io/badge/ChromaDB-vector%20store-8b5cf6?style=for-the-badge)](https://www.trychroma.com/)
 
-[**Try it live →**](https://rag-assistant-pro.vercel.app/)
+[**Try it live →**](https://rag-assistant-pro.vercel.app/) &nbsp;·&nbsp; [**Read the deep-dive →**](./UNDERSTANDING.md)
 
 </div>
+
+> **New here?** Read [`UNDERSTANDING.md`](./UNDERSTANDING.md) — a plain-English walkthrough of every tool, concept, and engineering decision in this codebase. No ML degree required.
 
 ---
 
@@ -313,6 +315,12 @@ RAG-Assistant/
 - [ ] Chat history persistence — save/load conversations
 - [ ] Portfolio AI enhancement — LLM-powered bullet rewriting per template style
 - [ ] Embedding model selection at upload time
+
+---
+
+## 📖 Deep-Dive Guide
+
+Want to understand *how* everything works — not just what it does? [`UNDERSTANDING.md`](./UNDERSTANDING.md) covers every tool, pattern, and concept in plain English: embeddings, RAG, ReAct, multi-agent orchestration, SSE streaming, DAG execution, and more. Written so you can explain any part of this project confidently.
 
 ---
 
