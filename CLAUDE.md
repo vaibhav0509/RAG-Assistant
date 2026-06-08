@@ -2,7 +2,7 @@
 
 ## Project overview
 
-**AI Studio** — a full-stack local AI workspace with nine panels: Home, RAG Chat, ReAct Agent, Quiz Game, CV→Portfolio builder, RAG Evaluation, Visualize, Agent Workflow Builder, and Blueprint. Starts with a homepage that explains every feature. Originally a pure RAG assistant, now a multi-tool AI playground.
+**AI Studio** — a full-stack local AI workspace with ten panels: Home, RAG Chat, ReAct Agent, Quiz Game, CV→Portfolio builder, RAG Evaluation, Visualize, Agent Workflow Builder, Multi-Agent Pipeline, and Blueprint. Starts with a homepage that explains every feature. Originally a pure RAG assistant, now a multi-tool AI playground.
 
 LLM inference: **Ollama** (local, default) or **Groq** (cloud, set `LLM_PROVIDER=groq` + `GROQ_API_KEY`). Vector storage: **ChromaDB**. Frontend: **React + Vite**.
 
@@ -165,7 +165,7 @@ Four strategies selectable at upload time via `chunk_strategy` form field:
 
 ```
 frontend/src/
-├── App.tsx                       # Root — IconNav collapsible sidebar (desktop) + MobileNav scrollable bottom bar, all 9 tabs CSS-mounted, ProcessProvider
+├── App.tsx                       # Root — IconNav collapsible sidebar (desktop) + MobileNav scrollable bottom bar, all 10 tabs CSS-mounted, ProcessProvider
 ├── api/client.ts                 # All fetch calls — API key injected, streamChat(), streamAgent(), streamEval(), parsePortfolio(), fetchEmbeddingPoints(), inspectContext(), visualizeChunks()
 ├── context/ProcessContext.tsx    # Event bus for terminal monitor — useProcess() hook, log(tag, msg, status)
 ├── hooks/useChat.ts              # Chat state — sendMessage(), clearMessages(), logs events to ProcessContext
@@ -183,7 +183,8 @@ frontend/src/
     ├── PortfolioPage.tsx         # Portfolio tab — upload PDF → parse → template picker → animated portfolio
     ├── EvalPage.tsx              # Eval tab — question input, strategy config, SSE streaming results, stop button, aggregate bars
     ├── VisualizePage.tsx         # Visualize tab — 3 sub-tabs: Embedding scatter (PCA+SVG), Context Inspector, Chunking Visualizer
-    ├── WorkflowPage.tsx          # Workflow tab — React Flow canvas, 6 custom node types, config panel, SSE run, save/load JSON
+    ├── WorkflowPage.tsx          # Workflow tab — React Flow canvas, 6 custom node types, config panel, SSE run, save/load JSON; palette+config hidden on mobile
+    ├── MultiAgentPage.tsx        # Multi-Agent tab — sequential agent pipeline, 3 templates, live streaming per agent, mobile tab switcher (Pipeline/Output)
     ├── Blueprint.tsx             # Blueprint tab — 9-section docs page with scrollspy TOC (see below)
     └── game/
         ├── GamePage.tsx          # Quiz game orchestrator
@@ -202,7 +203,7 @@ frontend/src/
                                                               [MobileNav fixed bottom scrollable — md:hidden]
 ```
 
-- **Tab persistence**: All 9 tabs (including home) are always mounted. Inactive tabs use `invisible pointer-events-none` (not unmounted) to preserve state. **Exception**: `<ReactFlow>` inside WorkflowPage renders conditionally via `active` prop — React Flow's CSS sets `pointer-events: all` on nodes which overrides parent's `pointer-events: none`.
+- **Tab persistence**: All 10 tabs (including home) are always mounted. Inactive tabs use `invisible pointer-events-none` (not unmounted) to preserve state. **Exception**: `<ReactFlow>` inside WorkflowPage renders conditionally via `active` prop — React Flow's CSS sets `pointer-events: all` on nodes which overrides parent's `pointer-events: none`.
 - **Default tab**: `"home"` — app opens on the welcome page.
 - **Home navigation**: The Zap logo in the expanded sidebar (or ChevronRight button in collapsed sidebar) navigates to `"home"`.
 - **Collections Sidebar**: Conditionally rendered at App level — only when `tab === "chat"` AND on desktop.
@@ -214,11 +215,14 @@ frontend/src/
 
 **SSE streaming**: `streamChat()` in `client.ts` is an `async function*` that yields `{token}` events and a final `{done, sources, perf}` event.
 
-**Process monitor events**: Use `useProcess()` → `log(tag, message, status)`. Tags: `SYSTEM QUERY EMBED RETRIEVAL CONTEXT MODEL STREAM DONE WEB GAME ANSWER DB RAG AGENT TOOL RESULT PORTFOLIO`. Status: `info running success error warn`.
+**Process monitor events**: Use `useProcess()` → `log(tag, message, status)`. Tags: `SYSTEM QUERY EMBED RETRIEVAL CONTEXT MODEL STREAM DONE WEB GAME ANSWER DB RAG AGENT TOOL RESULT PORTFOLIO WORKFLOW MULTIAGENT VISUALIZE`. Status: `info running success error warn`.
 - `AGENT` (violet) — agent question, iteration thoughts, done/error
-- `TOOL` (amber) — tool name + input
+- `TOOL` (amber) — tool name + input (used by ReAct, Workflow, Multi-Agent)
 - `RESULT` (sky) — observation/tool result preview
 - `PORTFOLIO` (lime) — CV parse progress steps
+- `WORKFLOW` (rose) — workflow node start/done/error events
+- `MULTIAGENT` (pink) — pipeline start/agent start/agent done/pipeline complete
+- `VISUALIZE` (indigo) — embedding fetch, context inspection, chunk visualization results
 
 **Brand color**: `brand-500` / `brand-600` (configured in Tailwind — check `tailwind.config.js`).
 
@@ -300,6 +304,9 @@ All sections use `whileInView` scroll-triggered entrance animations. No addition
 | POST | `/api/v1/game/answer` | ✓ | Submit MCQ answer |
 | GET | `/api/v1/game/analysis/{id}` | ✓ | Full session analysis |
 | GET | `/api/v1/game/history` | ✓ | All past game sessions |
+
+| POST | `/api/v1/multi-agent/run` | ✓ | Multi-agent pipeline (SSE streaming — pipeline_start, agent_start, agent_tool, agent_token, agent_done, done) |
+| GET  | `/api/v1/multi-agent/templates` | ✓ | List 3 built-in pipeline templates |
 
 All requests require header: `X-API-Key: enterprise-rag-secret`
 
@@ -395,7 +402,9 @@ Run: `/Users/vaibhavmishra/Desktop/enterprise-rag/backend/.venv/bin/python3.14 -
 - **Home/Welcome page** — `HomePage.tsx`; hero banner, 3-step quick start, 6 feature cards (with prereq warnings), backend troubleshooting footer; default tab on app load; accessible via Zap logo on desktop and mobile
 - **Visualize tab** — `VisualizePage.tsx` + `/api/v1/visualize/*`; 3 sub-tools: Embedding scatter (PCA 2D, pan/zoom SVG, hover tooltip), Context Window Inspector (prompt breakdown with token counts per section), Chunking Visualizer (all 4 strategies on same text, side-by-side stats)
 - **Rate limiting** — `services/rate_limiter.py`; SQLite-backed 100 req/day per UUID; `X-User-ID` header from `localStorage`; covers all LLM endpoints; resets at midnight automatically
-- **Agent Workflow Builder** — `WorkflowPage.tsx` + `services/workflow_engine.py` + `/api/v1/workflow/run`; React Flow canvas with 6 node types (Input, LLM, Retrieval, Web Search, Transform, Output); topological DAG execution; SSE streaming per-node status; config panel; save/load JSON; default RAG+Web pipeline pre-loaded
+- **Agent Workflow Builder** — `WorkflowPage.tsx` + `services/workflow_engine.py` + `/api/v1/workflow/run`; React Flow canvas with 6 node types (Input, LLM, Retrieval, Web Search, Transform, Output); topological DAG execution; SSE streaming per-node status; config panel; save/load JSON; default RAG+Web pipeline pre-loaded; palette+config hidden on mobile (canvas-only)
+- **Multi-Agent Pipeline** — `MultiAgentPage.tsx` + `services/multi_agent_engine.py` + `/api/v1/multi-agent/run`; sequential agent chain where each agent gets a specialized role, optional tool (web_search/retrieval), and sees all prior agents' full output as context; SSE streaming tokens per agent; 3 built-in templates; configurable agent list (add/remove/reorder); mobile-responsive with Pipeline/Output tab switcher; logs to MULTIAGENT/TOOL/RESULT in process monitor
+- **Visualize process monitoring** — `VisualizePage.tsx` now logs to VISUALIZE/EMBED/RETRIEVAL/CONTEXT tags in the process monitor for all three sub-tools (embedding scatter, context inspector, chunk visualizer)
 
 ## Possible next features
 

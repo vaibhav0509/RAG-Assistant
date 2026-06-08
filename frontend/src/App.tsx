@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Gamepad2, Terminal, Compass, BrainCircuit, FileUser, Zap, FlaskConical, Telescope, GitBranch, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageSquare, Gamepad2, Terminal, Compass, BrainCircuit, FileUser, Zap, FlaskConical, Telescope, GitBranch, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { Chat } from "./components/Chat";
 import { GamePage } from "./components/game/GamePage";
@@ -10,12 +10,13 @@ import { PortfolioPage } from "./components/PortfolioPage";
 import { EvalPage } from "./components/EvalPage";
 import { VisualizePage } from "./components/VisualizePage";
 import { WorkflowPage } from "./components/WorkflowPage";
+import { MultiAgentPage } from "./components/MultiAgentPage";
 import { HomePage } from "./components/HomePage";
 import { ModelSelector } from "./components/ModelSelector";
 import { TerminalSidebar } from "./components/TerminalSidebar";
 import { ProcessProvider, useProcess } from "./context/ProcessContext";
 
-type Tab = "home" | "chat" | "game" | "blueprint" | "agent" | "portfolio" | "eval" | "visualize" | "workflow";
+type Tab = "home" | "chat" | "game" | "blueprint" | "agent" | "portfolio" | "eval" | "visualize" | "workflow" | "multi-agent";
 
 const TABS: {
   id: Tab; label: string; icon: typeof MessageSquare; hint: string;
@@ -27,8 +28,9 @@ const TABS: {
   { id: "portfolio", label: "Portfolio", icon: FileUser,      hint: "CV → Portfolio",         activeText: "text-lime-400",   activeBg: "bg-lime-500/10",    activeBorder: "border-lime-500",   dot: "bg-lime-500"   },
   { id: "eval",      label: "Eval",      icon: FlaskConical,  hint: "RAG Evaluation",         activeText: "text-sky-400",    activeBg: "bg-sky-500/10",     activeBorder: "border-sky-500",    dot: "bg-sky-500"    },
   { id: "visualize", label: "Visualize", icon: Telescope,     hint: "Embeddings & Context",   activeText: "text-indigo-400", activeBg: "bg-indigo-500/10",  activeBorder: "border-indigo-500", dot: "bg-indigo-500" },
-  { id: "workflow",  label: "Workflow",  icon: GitBranch,     hint: "Workflow Builder",        activeText: "text-rose-400",   activeBg: "bg-rose-500/10",    activeBorder: "border-rose-500",   dot: "bg-rose-500"   },
-  { id: "blueprint", label: "Blueprint", icon: Compass,       hint: "Docs & Architecture",    activeText: "text-gray-300",   activeBg: "bg-gray-700/40",    activeBorder: "border-gray-500",   dot: "bg-gray-400"   },
+  { id: "workflow",    label: "Workflow",  icon: GitBranch,     hint: "Workflow Builder",        activeText: "text-rose-400",   activeBg: "bg-rose-500/10",    activeBorder: "border-rose-500",   dot: "bg-rose-500"   },
+  { id: "multi-agent",label: "Multi-AI",  icon: Users,         hint: "Multi-Agent Pipeline",    activeText: "text-pink-400",   activeBg: "bg-pink-500/10",    activeBorder: "border-pink-500",   dot: "bg-pink-500"   },
+  { id: "blueprint",  label: "Blueprint", icon: Compass,       hint: "Docs & Architecture",    activeText: "text-gray-300",   activeBg: "bg-gray-700/40",    activeBorder: "border-gray-500",   dot: "bg-gray-400"   },
 ];
 
 // ─── Desktop sidebar nav ───────────────────────────────────────────────────
@@ -119,7 +121,7 @@ function IconNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
       {/* Footer */}
       {!collapsed && (
         <div className="border-t border-slate-700/60 py-3 shrink-0">
-          <p className="px-4 text-[10px] text-slate-500 font-mono">9 tools · 1 codebase</p>
+          <p className="px-4 text-[10px] text-slate-500 font-mono">10 tools · 1 codebase</p>
         </div>
       )}
     </nav>
@@ -188,7 +190,8 @@ function AppInner() {
   useEffect(() => {
     const labels: Record<Tab, string> = {
       home: "Home", chat: "Chat", game: "Quiz Game", blueprint: "Blueprint",
-      agent: "Agent", portfolio: "Portfolio", eval: "Eval", visualize: "Visualize", workflow: "Workflow",
+      agent: "Agent", portfolio: "Portfolio", eval: "Eval", visualize: "Visualize",
+      workflow: "Workflow", "multi-agent": "Multi-Agent",
     };
     log("SYSTEM", `Switched to ${labels[tab]}`, "info");
   }, [tab]);
@@ -280,6 +283,9 @@ function AppInner() {
             </div>
             <div className={`absolute inset-0 flex overflow-hidden ${tab === "workflow"  ? "" : "invisible pointer-events-none"}`}>
               <WorkflowPage active={tab === "workflow"} />
+            </div>
+            <div className={`absolute inset-0 flex overflow-hidden ${tab === "multi-agent" ? "" : "invisible pointer-events-none"}`}>
+              <MultiAgentPage collection={collection} />
             </div>
             <div className={`absolute inset-0 flex overflow-hidden ${tab === "blueprint" ? "" : "invisible pointer-events-none"}`}>
               <Blueprint />

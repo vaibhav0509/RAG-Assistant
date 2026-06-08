@@ -69,6 +69,28 @@ async def generate_answer(
     return await llm_complete(messages, model)
 
 
+async def stream_messages(
+    messages: list[dict],
+    model: Optional[str] = None,
+) -> AsyncGenerator[str, None]:
+    """Stream tokens from an arbitrary messages list (no RAG context building)."""
+    resolved = _active_model(model)
+    if settings.llm_provider == "groq":
+        stream = await _groq_client().chat.completions.create(
+            model=resolved, messages=messages, stream=True  # type: ignore[arg-type]
+        )
+        async for chunk in stream:
+            token = chunk.choices[0].delta.content or ""
+            if token:
+                yield token
+    else:
+        client = ollama.AsyncClient(host=settings.ollama_base_url)
+        async for chunk in await client.chat(model=resolved, messages=messages, stream=True):
+            token = chunk.message.content
+            if token:
+                yield token
+
+
 async def stream_answer(
     question: str,
     context_chunks: list[dict],

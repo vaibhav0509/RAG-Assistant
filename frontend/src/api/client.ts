@@ -381,6 +381,55 @@ export async function* streamWorkflow(payload: {
   }
 }
 
+// ── Multi-Agent API ───────────────────────────────────────────────────────────
+
+export interface MultiAgentEvent {
+  type: "pipeline_start" | "agent_start" | "agent_tool" | "agent_token" | "agent_done" | "done";
+  agents?: { name: string; index: number }[];
+  total?: number;
+  index?: number;
+  name?: string;
+  tool?: string;
+  query?: string;
+  result_preview?: string;
+  token?: string;
+  output?: string;
+  final_output?: string;
+}
+
+export async function* streamMultiAgent(payload: {
+  agents: { name: string; role: string; tool: string; tool_config: Record<string, string | number> }[];
+  input: string;
+  collection?: string;
+  model?: string;
+}): AsyncGenerator<MultiAgentEvent> {
+  const res = await fetch(`${BASE}/multi-agent/run`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Multi-agent run failed");
+  }
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const raw = line.slice(6);
+      if (raw === "[DONE]") return;
+      yield JSON.parse(raw) as MultiAgentEvent;
+    }
+  }
+}
+
 export async function* streamEval(payload: {
   questions: string[];
   collection: string;

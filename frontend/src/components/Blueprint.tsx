@@ -70,6 +70,8 @@ const TECH_BADGES = [
   { label: "DiceBear",         color: "bg-lime-100 text-lime-700" },
   { label: "Docker",           color: "bg-sky-100 text-sky-700" },
   { label: "pytest",           color: "bg-gray-100 text-gray-700" },
+  { label: "React Flow",       color: "bg-rose-100 text-rose-700" },
+  { label: "Multi-Agent",      color: "bg-pink-100 text-pink-700" },
 ];
 
 function Hero() {
@@ -446,6 +448,12 @@ const FEATURES = [
     tags: [{ label: "Security", color: "bg-teal-50 text-teal-700" }],
     proves: "Stateless rate limiting + multi-user isolation without login",
   },
+  {
+    icon: Mic, color: "bg-pink-600", title: "Multi-Agent Pipeline",
+    desc: "Sequential agent chain (Research → Write → Review). Each agent gets a specialized role, optional tool (web search / doc retrieval), and sees all prior agents' outputs as context. Tokens stream live.",
+    tags: [{ label: "Agentic AI", color: "bg-pink-50 text-pink-600" }],
+    proves: "Multi-agent orchestration + sequential context passing + LangGraph/FlowiseAI patterns",
+  },
 ];
 
 function WhatWeBuilt() {
@@ -453,7 +461,7 @@ function WhatWeBuilt() {
     <FadeIn className="mb-10">
       <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Features</div>
       <h2 className="text-2xl font-black text-gray-900 mb-1">What We Built</h2>
-      <p className="text-gray-500 text-sm mb-6">Seventeen production-grade capabilities, each independently useful.</p>
+      <p className="text-gray-500 text-sm mb-6">Eighteen production-grade capabilities, each independently useful.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {FEATURES.map((f, i) => (
           <motion.div
@@ -764,6 +772,10 @@ const INTERVIEW_QA = [
     q: "How did you extract structured data from an unstructured PDF resume?",
     a: "Two stages: extraction then parsing. pdfplumber extracts raw text page-by-page and also finds embedded images (for the profile photo) using page.images. The raw text is passed to the LLM with a system prompt that instructs it to output only a JSON object matching a specific schema — name, title, summary, skills array, experience array with company/role/dates/bullets, education, projects, certifications, links. The JSON is parsed with json.loads and validated against a Pydantic model. Failure modes: the LLM occasionally wraps the JSON in markdown fences, so we strip ```json``` blocks before parsing. If no photo is found in the PDF, the frontend falls back to a DiceBear SVG avatar seeded from the person's name — consistent across renders. The same parsed profile JSON drives five completely different visual templates in the frontend, proving that clean structured extraction decouples data from presentation.",
   },
+  {
+    q: "How does your Multi-Agent Pipeline work, and how does it compare to LangGraph or FlowiseAI?",
+    a: "The Multi-Agent Pipeline runs agents sequentially — each agent is a specialized LLM call with a distinct system prompt (role), an optional tool (web search or ChromaDB retrieval), and access to all previous agents' outputs as context. The backend is a single async generator: for each agent it optionally fetches tool results, builds a message list (system role + prior outputs + current task + tool results), then streams tokens using the same stream_messages() helper as every other LLM call. Three built-in templates — Research→Write→Review, Analyze→Summarize→Format, Search→Synthesize→Answer — cover the most common multi-step patterns. Compared to LangGraph: LangGraph uses a DAG state machine with typed edges and conditional branching — much more powerful, but also much more complex. My implementation is a linear sequential pipeline, which covers 80% of real use cases with a fraction of the code. Compared to FlowiseAI: FlowiseAI is a no-code builder with pre-built node types and a drag-and-drop UI — the Workflow Builder tab is closer to that model. The Multi-Agent tab is higher-level: you configure agent roles and tools, not nodes and edges. The key insight is that context accumulation — each agent seeing all prior agents' full text output — is what makes sequential agents more powerful than a single LLM call. The first agent brings in raw research, the second synthesises it into prose, the third catches errors and polishes. Each step has specialised attention on a narrower task.",
+  },
 ];
 
 function InterviewPrep() {
@@ -777,7 +789,7 @@ function InterviewPrep() {
           <span className="text-xs font-bold tracking-widest text-brand-400 uppercase">Interview Ready</span>
         </div>
         <h2 className="text-2xl font-black text-white mb-1">Cheat Sheet</h2>
-        <p className="text-gray-400 text-sm mb-6">13 questions interviewers ask about AI/ML systems. Click to reveal a model answer.</p>
+        <p className="text-gray-400 text-sm mb-6">14 questions interviewers ask about AI/ML systems. Click to reveal a model answer.</p>
         <div className="space-y-2">
           {INTERVIEW_QA.map((item, i) => (
             <div key={i} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800">

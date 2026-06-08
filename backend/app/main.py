@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import documents, chat, collections, models, game, status, perf, agent, portfolio, eval, visualize, workflow
+from app.api.routes import documents, chat, collections, models, game, status, perf, agent, portfolio, eval, visualize, workflow, multi_agent
 from app.config import settings
 from app.services.rate_limiter import check_and_increment
 
@@ -16,6 +16,7 @@ _RATE_LIMITED_PATHS = {
     "/api/v1/game/answer",
     "/api/v1/visualize/context",
     "/api/v1/workflow/run",
+    "/api/v1/multi-agent/run",
 }
 
 app = FastAPI(
@@ -74,6 +75,7 @@ app.include_router(portfolio.router, prefix="/api/v1")
 app.include_router(eval.router, prefix="/api/v1")
 app.include_router(visualize.router, prefix="/api/v1")
 app.include_router(workflow.router, prefix="/api/v1")
+app.include_router(multi_agent.router, prefix="/api/v1")
 
 
 @app.get("/")

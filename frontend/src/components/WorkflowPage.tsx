@@ -510,7 +510,10 @@ export function WorkflowPage({ active }: { active: boolean }) {
 
       {/* Canvas area */}
       <div className="flex-1 flex overflow-hidden">
-        <NodePalette onAdd={addNode} />
+        {/* Palette — desktop only */}
+        <div className="hidden md:flex">
+          <NodePalette onAdd={addNode} />
+        </div>
 
         <div className="flex-1 relative">
           {active && (
@@ -537,13 +540,16 @@ export function WorkflowPage({ active }: { active: boolean }) {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
                 <p className="text-gray-400 text-sm font-medium">Canvas is empty</p>
-                <p className="text-gray-300 text-xs mt-1">Click a node type in the palette to add it</p>
+                <p className="text-gray-300 text-xs mt-1">Tap Run to use the default pipeline, or add nodes on desktop</p>
               </div>
             </div>
           )}
         </div>
 
-        <ConfigPanel node={selectedNode} onUpdate={updateNode} onDelete={deleteNode} />
+        {/* Config panel — desktop only */}
+        <div className="hidden md:flex">
+          <ConfigPanel node={selectedNode} onUpdate={updateNode} onDelete={deleteNode} />
+        </div>
       </div>
     </div>
   );

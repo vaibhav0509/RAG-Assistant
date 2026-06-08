@@ -2,10 +2,10 @@ import { motion } from "framer-motion";
 import {
   MessageSquare, BrainCircuit, Gamepad2, FileUser,
   FlaskConical, Compass, Upload, Search, Sparkles,
-  ArrowRight, Telescope, GitBranch,
+  ArrowRight, Telescope, GitBranch, Users,
 } from "lucide-react";
 
-type Tab = "chat" | "agent" | "game" | "portfolio" | "eval" | "blueprint" | "visualize" | "workflow";
+type Tab = "chat" | "agent" | "game" | "portfolio" | "eval" | "blueprint" | "visualize" | "workflow" | "multi-agent";
 
 interface FeatureCard {
   id: Tab;
@@ -16,18 +16,29 @@ interface FeatureCard {
   description: string;
   when: string;
   prereq?: string;
+  badge?: string;
 }
 
+// Ordered: most differentiated USP first → reference last
 const FEATURES: FeatureCard[] = [
   {
-    id: "chat",
-    icon: MessageSquare,
-    color: "text-brand-600",
-    bg: "bg-brand-50 border-brand-200",
-    title: "RAG Chat",
-    description: "Upload a document and ask questions. The AI retrieves the most relevant passages and answers based only on what's in your file.",
-    when: "Start here — this is the core tool. Upload a PDF, Word doc, or text file and query it in plain English.",
-    prereq: "Upload at least one document first.",
+    id: "multi-agent",
+    icon: Users,
+    color: "text-pink-600",
+    bg: "bg-pink-50 border-pink-200",
+    badge: "NEW",
+    title: "Multi-Agent Pipeline",
+    description: "Chain specialized AI agents — Research → Write → Review. Each agent sees prior outputs as context and can call tools (web search, docs). Live streaming per agent.",
+    when: "When a task needs multiple expert perspectives — research then draft then critique, or analyze then summarize then format.",
+  },
+  {
+    id: "workflow",
+    icon: GitBranch,
+    color: "text-rose-600",
+    bg: "bg-rose-50 border-rose-200",
+    title: "Workflow Builder",
+    description: "Drag-and-drop canvas to chain AI nodes: Input → Retrieval → Web Search → LLM → Output. Build, run, and save custom pipelines visually — no code required.",
+    when: "When you want to combine multiple AI steps — search docs + search web → merge → LLM answer — and see each node execute in real time.",
   },
   {
     id: "agent",
@@ -39,14 +50,14 @@ const FEATURES: FeatureCard[] = [
     when: "When a question needs multiple steps — cross-referencing sources, doing math, or combining doc knowledge with live web results.",
   },
   {
-    id: "eval",
-    icon: FlaskConical,
-    color: "text-blue-600",
-    bg: "bg-blue-50 border-blue-200",
-    title: "RAG Evaluation",
-    description: "Paste a list of questions, run them through your collection, and get three quality scores per question: context relevance, faithfulness, and answer relevance.",
-    when: "When you want to measure whether your pipeline is finding the right content or compare retrieval strategies head-to-head.",
-    prereq: "Upload documents first — questions should relate to what's in the collection.",
+    id: "chat",
+    icon: MessageSquare,
+    color: "text-brand-600",
+    bg: "bg-brand-50 border-brand-200",
+    title: "RAG Chat",
+    description: "Upload a document and ask questions. The AI retrieves the most relevant passages and answers based only on what's in your file — no hallucination.",
+    when: "Start here — this is the core tool. Upload a PDF, Word doc, or text file and query it in plain English.",
+    prereq: "Upload at least one document first.",
   },
   {
     id: "visualize",
@@ -54,8 +65,18 @@ const FEATURES: FeatureCard[] = [
     color: "text-indigo-600",
     bg: "bg-indigo-50 border-indigo-200",
     title: "Visualize",
-    description: "Three tools: see your chunks as a 2D scatter plot in vector space, inspect exactly what tokens enter the LLM prompt, and compare all 4 chunking strategies on the same text.",
+    description: "Three tools: see chunks as a 2D PCA scatter plot, inspect exactly what tokens enter the LLM prompt with token counts, and compare all 4 chunking strategies side by side.",
     when: "When you want to understand why the pipeline behaves the way it does — debug retrieval, visualise embeddings, or tune chunk settings.",
+  },
+  {
+    id: "eval",
+    icon: FlaskConical,
+    color: "text-sky-600",
+    bg: "bg-sky-50 border-sky-200",
+    title: "RAG Evaluation",
+    description: "Paste a list of questions, run them through your collection, and get three quality scores per question: context relevance, faithfulness, and answer relevance.",
+    when: "When you want to measure whether your pipeline is finding the right content or compare retrieval strategies head-to-head.",
+    prereq: "Upload documents first — questions should relate to what's in the collection.",
   },
   {
     id: "game",
@@ -63,7 +84,7 @@ const FEATURES: FeatureCard[] = [
     color: "text-amber-600",
     bg: "bg-amber-50 border-amber-200",
     title: "Quiz Game",
-    description: "Pick a topic, the AI suggests subtopics, then generates multiple-choice questions from your documents, the web, or its own knowledge.",
+    description: "Pick a topic, the AI suggests subtopics, then generates multiple-choice questions from your documents, the web, or its own knowledge. Scored, timed, with full analysis.",
     when: "When you want to test your understanding of a subject or study uploaded material interactively.",
   },
   {
@@ -76,21 +97,12 @@ const FEATURES: FeatureCard[] = [
     when: "When you want to turn a plain resume into a shareable, styled portfolio page without writing any HTML.",
   },
   {
-    id: "workflow",
-    icon: GitBranch,
-    color: "text-rose-600",
-    bg: "bg-rose-50 border-rose-200",
-    title: "Workflow Builder",
-    description: "Drag-and-drop canvas to chain AI nodes: Input → Retrieval → Web Search → LLM → Output. Build, run, and save custom pipelines visually.",
-    when: "When you want to combine multiple AI steps — e.g. search docs + search web → merge → LLM answer — without writing code.",
-  },
-  {
     id: "blueprint",
     icon: Compass,
     color: "text-gray-600",
     bg: "bg-gray-50 border-gray-200",
     title: "Blueprint",
-    description: "An interactive docs page covering every architectural decision — setup guide, RAG pipeline diagrams, retrieval strategy trade-offs, concept explainers, and interview Q&A.",
+    description: "Interactive docs covering every architectural decision — setup guide, RAG pipeline diagrams, retrieval strategy trade-offs, concept explainers, and interview Q&A.",
     when: "When you want to understand how the system works under the hood, set it up for the first time, or prepare for an AI/ML engineering interview.",
   },
 ];
@@ -108,14 +120,14 @@ const STEPS = [
     color: "bg-violet-600",
     step: "02",
     title: "Ask questions",
-    desc: 'Type a question in the chat box. The AI retrieves the most relevant passages and answers from your document — no hallucination.',
+    desc: "Type a question in the chat box. The AI retrieves the most relevant passages and answers from your document — no hallucination.",
   },
   {
     icon: Sparkles,
     color: "bg-amber-500",
     step: "03",
     title: "Explore the tools",
-    desc: "Try Agent for complex multi-step questions, Quiz to test what you've learned, or Eval to measure retrieval quality.",
+    desc: "Try Multi-Agent for expert pipelines, Agent for complex multi-step questions, Workflow Builder for visual chains, or Eval to measure retrieval quality.",
   },
 ];
 
@@ -146,21 +158,30 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <p className="text-brand-400 font-mono text-xs tracking-widest font-bold mb-3">AI STUDIO</p>
             <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight">
               Your local AI workspace.<br />
-              <span className="text-brand-400">Six tools. One codebase.</span>
+              <span className="text-brand-400">Ten tools. One codebase.</span>
             </h1>
             <p className="text-gray-400 mt-4 text-sm leading-relaxed max-w-xl">
-              Upload documents and chat with them, run a reasoning agent, generate quizzes, turn a resume into a portfolio,
-              evaluate your RAG pipeline quality — all powered by <span className="text-white font-medium">Ollama</span> locally
-              or <span className="text-purple-400 font-medium">Groq</span> in the cloud. No OpenAI. No data leaving your machine unless you choose it.
+              Multi-agent pipelines, visual workflow builder, RAG chat, ReAct agent, quiz game, portfolio generator, evaluation, embeddings visualization — all powered by{" "}
+              <span className="text-white font-medium">Ollama</span> locally or{" "}
+              <span className="text-purple-400 font-medium">Groq</span> in the cloud. No OpenAI. No data leaving your machine unless you choose it.
             </p>
-            <button
-              onClick={() => onNavigate("chat")}
-              className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors"
-            >
-              Start with Chat <ArrowRight size={14} />
-            </button>
+            <div className="flex flex-wrap gap-3 mt-6">
+              <button
+                onClick={() => onNavigate("multi-agent")}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white text-sm font-semibold rounded-xl transition-colors"
+              >
+                Try Multi-Agent <ArrowRight size={14} />
+              </button>
+              <button
+                onClick={() => onNavigate("chat")}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl transition-colors border border-white/20"
+              >
+                Start with Chat
+              </button>
+            </div>
           </div>
           <div className="absolute right-8 top-8 w-48 h-48 bg-brand-500 rounded-full opacity-5 blur-3xl pointer-events-none" />
+          <div className="absolute right-32 bottom-4 w-24 h-24 bg-pink-500 rounded-full opacity-10 blur-2xl pointer-events-none" />
         </motion.div>
 
         {/* ── Quick start ── */}
@@ -198,8 +219,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + i * 0.06 }}
-                className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col"
+                className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col relative"
               >
+                {f.badge && (
+                  <span className="absolute top-3 right-3 text-[9px] font-black tracking-widest bg-pink-500 text-white px-1.5 py-0.5 rounded-full">
+                    {f.badge}
+                  </span>
+                )}
                 <div className={`w-9 h-9 rounded-lg border flex items-center justify-center mb-3 shrink-0 ${f.bg}`}>
                   <f.icon size={17} className={f.color} />
                 </div>
@@ -233,7 +259,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4"
+          className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
         >
           <div>
             <p className="text-sm font-semibold text-gray-700">Backend not responding?</p>

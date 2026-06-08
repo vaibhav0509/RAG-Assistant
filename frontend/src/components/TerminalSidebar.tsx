@@ -22,10 +22,13 @@ const TAG_COLORS: Record<EventTag, string> = {
   ANSWER:    "text-white",
   DB:        "text-teal-400",
   RAG:       "text-pink-400",
-  AGENT:     "text-violet-400",
-  TOOL:      "text-amber-400",
-  RESULT:    "text-sky-400",
-  PORTFOLIO: "text-lime-400",
+  AGENT:      "text-violet-400",
+  TOOL:       "text-amber-400",
+  RESULT:     "text-sky-400",
+  PORTFOLIO:  "text-lime-400",
+  WORKFLOW:   "text-rose-400",
+  MULTIAGENT: "text-pink-400",
+  VISUALIZE:  "text-indigo-400",
 };
 
 const STATUS_DOT: Record<EventStatus, string> = {

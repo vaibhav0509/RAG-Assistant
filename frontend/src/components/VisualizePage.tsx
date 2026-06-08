@@ -4,6 +4,7 @@ import {
   fetchEmbeddingPoints, inspectContext, visualizeChunks,
   type EmbeddingPoint, type EmbeddingResponse, type ContextResponse, type ChunkStrategyResult,
 } from "../api/client";
+import { useProcess } from "../context/ProcessContext";
 
 // ── palette ───────────────────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ function ErrorBanner({ msg }: { msg: string }) {
 // ── 1. Embedding Scatter ──────────────────────────────────────────────────
 
 function EmbeddingView() {
+  const { log } = useProcess();
   const [collection, setCollection] = useState("default");
   const [query, setQuery]           = useState("");
   const [data, setData]             = useState<EmbeddingResponse | null>(null);
@@ -75,9 +77,12 @@ function EmbeddingView() {
 
   const load = useCallback(async () => {
     setError(""); setLoading(true);
+    log("VISUALIZE", `Fetching embeddings — collection: ${collection}${query ? ` · query: "${query}"` : ""}`, "running");
     try {
       const res = await fetchEmbeddingPoints(collection, query);
       setData(res);
+      log("EMBED", `PCA projection: ${res.points.length} chunks from ${new Set(res.points.map(p => p.source)).size} sources`, "success");
+      if (query && res.query_point) log("VISUALIZE", `Query point projected into embedding space`, "info");
       if (res.points.length > 0) {
         const xs = res.points.map(p => p.x);
         const ys = res.points.map(p => p.y);
@@ -87,11 +92,13 @@ function EmbeddingView() {
         setVb({ x: xMin - pad, y: yMin - pad, w: xMax - xMin + pad * 2, h: yMax - yMin + pad * 2 });
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load");
+      const msg = e instanceof Error ? e.message : "Failed to load";
+      setError(msg);
+      log("VISUALIZE", `Embedding fetch failed: ${msg}`, "error");
     } finally {
       setLoading(false);
     }
-  }, [collection, query]);
+  }, [collection, query, log]);
 
   const onWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -250,6 +257,7 @@ function EmbeddingView() {
 // ── 2. Context Inspector ──────────────────────────────────────────────────
 
 function ContextView() {
+  const { log } = useProcess();
   const [question,   setQuestion]   = useState("");
   const [collection, setCollection] = useState("default");
   const [strategy,   setStrategy]   = useState("naive");
@@ -261,15 +269,23 @@ function ContextView() {
   const inspect = useCallback(async () => {
     if (!question.trim()) return;
     setError(""); setLoading(true);
+    log("CONTEXT", `Inspecting context — "${question.slice(0, 60)}…" · strategy: ${strategy} · top-${topK}`, "running");
     try {
       const res = await inspectContext({ question, collection, strategy, top_k: topK });
       setData(res);
+      log("RETRIEVAL", `Retrieved ${res.chunks.length} chunks · ${res.total_tokens} / ${res.max_tokens} tokens used`, "success");
+      if (res.chunks.length > 0) {
+        const avgScore = (res.chunks.reduce((s, c) => s + c.score, 0) / res.chunks.length).toFixed(3);
+        log("VISUALIZE", `Avg relevance score: ${avgScore} · context: ${res.context_tokens}t · system: ${res.system_tokens}t · question: ${res.question_tokens}t`, "info");
+      }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to inspect");
+      const msg = e instanceof Error ? e.message : "Failed to inspect";
+      setError(msg);
+      log("CONTEXT", `Inspection failed: ${msg}`, "error");
     } finally {
       setLoading(false);
     }
-  }, [question, collection, strategy, topK]);
+  }, [question, collection, strategy, topK, log]);
 
   const usagePct = data ? Math.min((data.total_tokens / data.max_tokens) * 100, 100) : 0;
   const usageColor = usagePct > 80 ? "bg-red-500" : usagePct > 60 ? "bg-amber-500" : "bg-brand-500";
@@ -404,6 +420,7 @@ Vector embeddings are at the core of RAG. Each document chunk is transformed int
 Chunking strategy significantly impacts retrieval quality. If chunks are too large, they contain irrelevant information that dilutes the signal. If chunks are too small, they lose the surrounding context needed to answer questions accurately. The optimal chunk size depends on the nature of the documents and the typical query length.`;
 
 function ChunkView() {
+  const { log } = useProcess();
   const [text,      setText]      = useState(SAMPLE_TEXT);
   const [chunkSize, setChunkSize] = useState(500);
   const [overlap,   setOverlap]   = useState(100);
@@ -415,15 +432,22 @@ function ChunkView() {
   const run = useCallback(async () => {
     if (!text.trim()) return;
     setError(""); setLoading(true);
+    log("VISUALIZE", `Chunking ${text.length} chars — size: ${chunkSize} · overlap: ${overlap}`, "running");
     try {
       const res = await visualizeChunks({ text, chunk_size: chunkSize, chunk_overlap: overlap });
       setResults(res);
+      const strategies = Object.entries(res);
+      strategies.forEach(([name, r]) => {
+        log("VISUALIZE", `${name}: ${r.count} chunks · avg ${r.avg_size} chars (min ${r.min_size} / max ${r.max_size})`, "success");
+      });
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to chunk");
+      const msg = e instanceof Error ? e.message : "Failed to chunk";
+      setError(msg);
+      log("VISUALIZE", `Chunk visualization failed: ${msg}`, "error");
     } finally {
       setLoading(false);
     }
-  }, [text, chunkSize, overlap]);
+  }, [text, chunkSize, overlap, log]);
 
   const active = results?.[activeTab];
 
@@ -552,7 +576,7 @@ export function VisualizePage() {
       </div>
 
       {/* Sub-tab selector */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {SUB_TABS.map(t => (
           <button
             key={t.id}

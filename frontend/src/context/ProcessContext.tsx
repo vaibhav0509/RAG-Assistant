@@ -6,7 +6,8 @@ export type EventTag =
   | "SYSTEM" | "QUERY" | "EMBED" | "RETRIEVAL"
   | "CONTEXT" | "MODEL" | "STREAM" | "DONE"
   | "WEB" | "GAME" | "ANSWER" | "DB" | "RAG"
-  | "AGENT" | "TOOL" | "RESULT" | "PORTFOLIO";
+  | "AGENT" | "TOOL" | "RESULT" | "PORTFOLIO"
+  | "WORKFLOW" | "MULTIAGENT" | "VISUALIZE";
 
 export interface ProcessEvent {
   id: string;
