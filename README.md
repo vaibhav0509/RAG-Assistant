@@ -33,7 +33,7 @@ It's both a functional AI toolkit and a showcase of production-grade AI/ML engin
 
 ---
 
-## 🛠️ Seven Panels in One
+## 🛠️ Eight Panels in One
 
 ### 🏠 Welcome Home
 Opens by default. Explains every tool with feature cards, a 3-step quick start, and a backend troubleshooting hint. No need to read Blueprint first.
@@ -52,6 +52,12 @@ Upload a PDF resume → the LLM parses it into structured JSON → renders it as
 
 ### 🧪 RAG Evaluation
 Paste in a list of questions, pick a retrieval strategy, hit Run — and get three quantitative metrics per question: **context relevance** (cosine similarity of retrieved chunks), **answer faithfulness** (LLM judge), and **answer relevance** (embedding similarity). Aggregate bars show overall pipeline quality.
+
+### 🔭 Visualize
+Three tools that make the invisible visible:
+- **Embedding Space** — PCA scatter plot of every chunk in your collection. Scroll to zoom, drag to pan, hover any dot to read the chunk. Type a query to see where it lands in vector space relative to your documents.
+- **Context Window Inspector** — Before the LLM answers, see exactly what goes into its prompt: system prompt, each retrieved chunk with its relevance score, and your question — all with token counts and a colour-coded usage bar.
+- **Chunking Visualizer** — Paste any text and see it split by all 4 strategies simultaneously. Compare chunk count, average size, and boundary placement side by side.
 
 ### 📐 Blueprint
 An interactive docs page explaining every architectural decision — with a **Setup Guide** section (prerequisites, Docker + local dev commands, env vars table), live system metrics, pipeline diagrams, concept explainers, retrieval strategy comparisons, and an interview cheat sheet.
@@ -281,7 +287,7 @@ RAG-Assistant/
 │   ├── requirements.txt
 │   ├── requirements-dev.txt     # pytest, httpx
 │   └── app/
-│       ├── api/routes/          # chat · agent · portfolio · game · perf · status · eval
+│       ├── api/routes/          # chat · agent · portfolio · game · perf · status · eval · visualize
 │       ├── services/
 │       │   ├── retrieval/       # 4 retrieval strategies
 │       │   ├── vector_store.py  # ChromaDB wrapper
@@ -292,8 +298,8 @@ RAG-Assistant/
 │       └── main.py              # FastAPI app + auth middleware
 └── frontend/
     └── src/
-        ├── App.tsx              # Layout — icon nav + 7 tab panels (home default, logo → home)
-        ├── api/client.ts        # Typed fetch wrappers + SSE generators: streamChat · streamAgent · streamEval
+        ├── App.tsx              # Layout — icon nav + 8 tab panels (home default, logo → home)
+        ├── api/client.ts        # Typed fetch wrappers + SSE generators: streamChat · streamAgent · streamEval · visualize
         ├── context/             # ProcessContext — real-time event bus
         └── components/
             ├── HomePage.tsx     # Welcome screen: hero · quick start · 6 feature cards
@@ -301,6 +307,7 @@ RAG-Assistant/
             ├── AgentPage.tsx
             ├── PortfolioPage.tsx # 5 templates: Basic · Creative · Dark · OldSchool · 90's
             ├── EvalPage.tsx     # RAG eval — SSE streaming results, 90s timeout, stop button
+            ├── VisualizePage.tsx # Embedding scatter · Context inspector · Chunking visualizer
             ├── Blueprint.tsx    # 8-section docs with scrollspy
             ├── TerminalSidebar.tsx
             └── game/            # Quiz game components

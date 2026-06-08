@@ -103,6 +103,7 @@ backend/
 │   │   ├── status.py             # GET /status (system health snapshot)
 │   │   ├── perf.py               # GET /perf/history, GET /perf/stats
 │   │   ├── eval.py               # POST /eval/run — RAG evaluation with 3 metrics
+│   │   ├── visualize.py          # GET /visualize/embeddings, POST /visualize/context, POST /visualize/chunks
 │   │   └── game.py               # POST /game/suggest-subtopics, /game/start (SSE), /game/answer, /game/analysis/{id}, /game/history
 │   └── services/
 │       ├── vector_store.py       # ChromaDB wrapper — add_documents(), query(), delete_collection()
@@ -164,8 +165,8 @@ Four strategies selectable at upload time via `chunk_strategy` form field:
 
 ```
 frontend/src/
-├── App.tsx                       # Root — IconNav (desktop) + MobileNav (bottom bar), all 7 tabs CSS-mounted, ProcessProvider
-├── api/client.ts                 # All fetch calls — API key injected, streamChat(), streamAgent(), streamEval(), parsePortfolio()
+├── App.tsx                       # Root — IconNav (desktop) + MobileNav (bottom bar), all 8 tabs CSS-mounted, ProcessProvider
+├── api/client.ts                 # All fetch calls — API key injected, streamChat(), streamAgent(), streamEval(), parsePortfolio(), fetchEmbeddingPoints(), inspectContext(), visualizeChunks()
 ├── context/ProcessContext.tsx    # Event bus for terminal monitor — useProcess() hook, log(tag, msg, status)
 ├── hooks/useChat.ts              # Chat state — sendMessage(), clearMessages(), logs events to ProcessContext
 ├── types/index.ts                # Message, Source types
@@ -181,7 +182,8 @@ frontend/src/
     ├── AgentPage.tsx             # Agent tab — ReAct loop UI, MiniSpinner, ReAct explainer, step cards
     ├── PortfolioPage.tsx         # Portfolio tab — upload PDF → parse → template picker → animated portfolio
     ├── EvalPage.tsx              # Eval tab — question input, strategy config, SSE streaming results, stop button, aggregate bars
-    ├── Blueprint.tsx             # Blueprint tab — 8-section docs page with scrollspy TOC (see below)
+    ├── VisualizePage.tsx         # Visualize tab — 3 sub-tabs: Embedding scatter (PCA+SVG), Context Inspector, Chunking Visualizer
+    ├── Blueprint.tsx             # Blueprint tab — 9-section docs page with scrollspy TOC (see below)
     └── game/
         ├── GamePage.tsx          # Quiz game orchestrator
         ├── TopicSetup.tsx        # Topic input + subtopic suggestion
@@ -199,7 +201,7 @@ frontend/src/
                                                               [MobileNav fixed bottom — md:hidden]
 ```
 
-- **Tab persistence**: All 7 tabs (including home) are always mounted. Inactive tabs use `invisible pointer-events-none` (not unmounted) to preserve component state across tab switches.
+- **Tab persistence**: All 8 tabs (including home) are always mounted. Inactive tabs use `invisible pointer-events-none` (not unmounted) to preserve component state across tab switches.
 - **Default tab**: `"home"` — app opens on the welcome page.
 - **Home navigation**: The Zap logo in the desktop `IconNav` and the mobile header are buttons that navigate to `"home"`. Home is NOT in the `TABS` array so it has no bottom-nav slot on mobile.
 - **Collections Sidebar**: Conditionally rendered at App level — only when `tab === "chat"` AND on desktop (`hidden md:flex`).
@@ -390,6 +392,7 @@ Run: `/Users/vaibhavmishra/Desktop/enterprise-rag/backend/.venv/bin/python3.14 -
 - **pytest test suite** — 39 tests, 3 files, mocked ML deps; run in < 2 seconds
 - **Docker Compose** — one-command `docker compose up --build` for both services with health checks
 - **Home/Welcome page** — `HomePage.tsx`; hero banner, 3-step quick start, 6 feature cards (with prereq warnings), backend troubleshooting footer; default tab on app load; accessible via Zap logo on desktop and mobile
+- **Visualize tab** — `VisualizePage.tsx` + `/api/v1/visualize/*`; 3 sub-tools: Embedding scatter (PCA 2D, pan/zoom SVG, hover tooltip), Context Window Inspector (prompt breakdown with token counts per section), Chunking Visualizer (all 4 strategies on same text, side-by-side stats)
 
 ## Possible next features
 

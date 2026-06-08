@@ -242,6 +242,87 @@ export type EvalStreamEvent =
   | { type: "done";     aggregate: EvalResponse["aggregate"] }
   | { type: "error";    index: number; message: string };
 
+// ── Visualize API ─────────────────────────────────────────────────────────
+
+export interface EmbeddingPoint {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  source: string;
+  chunk: number;
+}
+
+export interface EmbeddingResponse {
+  points: EmbeddingPoint[];
+  query_point: { x: number; y: number; text: string } | null;
+  method: string;
+}
+
+export interface ContextChunk {
+  content: string;
+  source: string;
+  chunk: number;
+  score: number;
+  tokens: number;
+}
+
+export interface ContextResponse {
+  system_prompt: string;
+  system_tokens: number;
+  chunks: ContextChunk[];
+  question: string;
+  question_tokens: number;
+  context_tokens: number;
+  total_tokens: number;
+  max_tokens: number;
+}
+
+export interface ChunkStrategyResult {
+  chunks: string[];
+  count: number;
+  avg_size: number;
+  min_size: number;
+  max_size: number;
+}
+
+export async function fetchEmbeddingPoints(collection: string, query = ""): Promise<EmbeddingResponse> {
+  const params = new URLSearchParams({ collection });
+  if (query) params.set("query", query);
+  const res = await fetch(`${BASE}/visualize/embeddings?${params}`, { headers: headers() });
+  if (!res.ok) throw new Error("Failed to fetch embeddings");
+  return res.json();
+}
+
+export async function inspectContext(payload: {
+  question: string;
+  collection: string;
+  strategy: string;
+  top_k: number;
+}): Promise<ContextResponse> {
+  const res = await fetch(`${BASE}/visualize/context`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to inspect context");
+  return res.json();
+}
+
+export async function visualizeChunks(payload: {
+  text: string;
+  chunk_size: number;
+  chunk_overlap: number;
+}): Promise<Record<string, ChunkStrategyResult>> {
+  const res = await fetch(`${BASE}/visualize/chunks`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to visualize chunks");
+  return res.json();
+}
+
 export async function* streamEval(payload: {
   questions: string[];
   collection: string;

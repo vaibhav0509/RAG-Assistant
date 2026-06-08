@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Layers, ChevronDown, Database, Server, Globe, Zap,
@@ -417,6 +417,12 @@ const FEATURES = [
     proves: "RAG quality measurement + LLM-as-judge pattern",
   },
   {
+    icon: Eye, color: "bg-indigo-600", title: "Visualize Tab",
+    desc: "Three tools: PCA scatter plot of chunk embeddings with pan/zoom, context window inspector showing token breakdown per prompt section, chunking strategy side-by-side comparison.",
+    tags: [{ label: "Explainability", color: "bg-indigo-50 text-indigo-600" }],
+    proves: "AI explainability + interactive data visualisation with SVG",
+  },
+  {
     icon: Check, color: "bg-slate-600", title: "pytest Test Suite",
     desc: "39 tests covering all 4 chunking strategies, retrieval helper functions, and every API endpoint — with mocked ML deps so they run in < 2 seconds.",
     tags: [{ label: "Testing", color: "bg-slate-100 text-slate-600" }],
@@ -435,7 +441,7 @@ function WhatWeBuilt() {
     <FadeIn className="mb-10">
       <div className="text-xs font-bold tracking-widest text-brand-500 uppercase mb-1">Features</div>
       <h2 className="text-2xl font-black text-gray-900 mb-1">What We Built</h2>
-      <p className="text-gray-500 text-sm mb-6">Fourteen production-grade capabilities, each independently useful.</p>
+      <p className="text-gray-500 text-sm mb-6">Fifteen production-grade capabilities, each independently useful.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {FEATURES.map((f, i) => (
           <motion.div
@@ -992,98 +998,76 @@ function SetupGuide() {
   );
 }
 
-// ─── scrollspy TOC ────────────────────────────────────────────────────────
+// ─── tab nav ──────────────────────────────────────────────────────────────
 
-const TOC = [
-  { id: "setup",      label: "Setup Guide"   },
-  { id: "pipeline",   label: "RAG Pipeline"  },
-  { id: "arch",       label: "Architecture"  },
-  { id: "features",   label: "Features"      },
-  { id: "concepts",   label: "Concepts"      },
-  { id: "strategies", label: "Strategies"    },
-  { id: "interview",  label: "Interview Prep"},
-  { id: "stack",      label: "Stack & Roadmap"},
+type BlueprintTab = "pipeline" | "features" | "concepts" | "interview" | "stack" | "setup";
+
+const BLUEPRINT_TABS: { id: BlueprintTab; label: string; icon: React.ElementType; desc: string }[] = [
+  { id: "pipeline",  label: "Pipeline",   icon: GitBranch,  desc: "RAG flow & architecture"      },
+  { id: "features",  label: "Features",   icon: Trophy,     desc: "What we built"                 },
+  { id: "concepts",  label: "Concepts",   icon: BookOpen,   desc: "Deep dive & strategies"        },
+  { id: "interview", label: "Interview",  icon: Mic,        desc: "Interview Q&A"                 },
+  { id: "stack",     label: "Stack",      icon: Code2,      desc: "Tech stack & roadmap"          },
+  { id: "setup",     label: "Setup",      icon: Terminal,   desc: "How to run it"                 },
 ];
 
 // ─── main ─────────────────────────────────────────────────────────────────
 
 export function Blueprint() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeId, setActiveId] = useState("");
-
-  useEffect(() => {
-    const root = scrollRef.current;
-    if (!root) return;
-    const sections = root.querySelectorAll("[data-section]");
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting);
-        if (visible.length > 0) setActiveId(visible[0].target.id);
-      },
-      { root, rootMargin: "0px 0px -75% 0px", threshold: 0.05 }
-    );
-    sections.forEach((s) => observer.observe(s));
-    return () => observer.disconnect();
-  }, []);
-
-  const scrollTo = (id: string) => {
-    const el = scrollRef.current?.querySelector(`#${id}`);
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const [activeTab, setActiveTab] = useState<BlueprintTab>("pipeline");
 
   return (
-    <div className="flex-1 flex overflow-hidden">
-      {/* Main scrollable content */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-          <Hero />
-          <LiveMetrics />
+    <div className="flex-1 overflow-y-auto bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8">
+        <Hero />
+        <LiveMetrics />
+      </div>
 
-          <div id="setup"    data-section><SetupGuide /></div>
-          <div id="pipeline" data-section><RAGPipeline /></div>
-          <div id="arch"     data-section><ArchDiagram /></div>
-          <div id="features" data-section><WhatWeBuilt /></div>
-          <div id="concepts" data-section><Concepts /></div>
-          <div id="strategies" data-section><StrategyComparison /></div>
-          <div id="interview"  data-section><InterviewPrep /></div>
-          <div id="stack"      data-section><TechStackAndRoadmap /></div>
-
-          <FadeIn>
-            <div className="text-center py-8 border-t border-gray-200">
-              <p className="text-xs text-gray-400 font-mono">
-                Built with Ollama / Groq · ChromaDB · FastAPI · React · sentence-transformers
-              </p>
-              <p className="text-xs text-gray-300 mt-1 font-mono">
-                Local: Ollama on-device · Cloud: set{" "}
-                <code className="text-brand-400">LLM_PROVIDER=groq</code> +{" "}
-                <code className="text-brand-400">GROQ_API_KEY</code>
-              </p>
-            </div>
-          </FadeIn>
+      {/* Sticky tab bar */}
+      <div className="sticky top-0 z-20 bg-gray-50 border-b border-gray-200 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
+            {BLUEPRINT_TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                  activeTab === t.id
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                }`}
+              >
+                <t.icon size={13} />
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Sticky scrollspy sidebar — xl screens only */}
-      <div className="hidden xl:flex w-[168px] shrink-0 bg-white border-l border-gray-100 overflow-y-auto">
-        <div className="sticky top-0 p-4 w-full">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">On this page</p>
-          <nav className="space-y-0.5">
-            {TOC.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => scrollTo(s.id)}
-                className={`w-full text-left text-xs py-1.5 pl-3 border-l-2 transition-all duration-150 ${
-                  activeId === s.id
-                    ? "border-brand-500 text-brand-600 font-semibold bg-brand-50/50"
-                    : "border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+      {/* Tab content */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        {activeTab === "pipeline"  && <><RAGPipeline /><ArchDiagram /></>}
+        {activeTab === "features"  && <WhatWeBuilt />}
+        {activeTab === "concepts"  && <><Concepts /><StrategyComparison /></>}
+        {activeTab === "interview" && <InterviewPrep />}
+        {activeTab === "stack"     && <TechStackAndRoadmap />}
+        {activeTab === "setup"     && <SetupGuide />}
+
+        <FadeIn>
+          <div className="text-center py-8 border-t border-gray-200 mt-4">
+            <p className="text-xs text-gray-400 font-mono">
+              Built with Ollama / Groq · ChromaDB · FastAPI · React · sentence-transformers
+            </p>
+            <p className="text-xs text-gray-300 mt-1 font-mono">
+              Local: Ollama on-device · Cloud: set{" "}
+              <code className="text-brand-400">LLM_PROVIDER=groq</code> +{" "}
+              <code className="text-brand-400">GROQ_API_KEY</code>
+            </p>
+          </div>
+        </FadeIn>
       </div>
     </div>
   );
 }
+

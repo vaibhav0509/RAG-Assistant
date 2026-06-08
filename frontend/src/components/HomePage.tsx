@@ -2,10 +2,10 @@ import { motion } from "framer-motion";
 import {
   MessageSquare, BrainCircuit, Gamepad2, FileUser,
   FlaskConical, Compass, Upload, Search, Sparkles,
-  ArrowRight,
+  ArrowRight, Telescope,
 } from "lucide-react";
 
-type Tab = "chat" | "agent" | "game" | "portfolio" | "eval" | "blueprint";
+type Tab = "chat" | "agent" | "game" | "portfolio" | "eval" | "blueprint" | "visualize";
 
 interface FeatureCard {
   id: Tab;
@@ -26,7 +26,7 @@ const FEATURES: FeatureCard[] = [
     bg: "bg-brand-50 border-brand-200",
     title: "RAG Chat",
     description: "Upload a document and ask questions. The AI retrieves the most relevant passages and answers based only on what's in your file.",
-    when: "When you have a PDF, Word doc, or text file and want to query it in plain English.",
+    when: "Start here — this is the core tool. Upload a PDF, Word doc, or text file and query it in plain English.",
     prereq: "Upload at least one document first.",
   },
   {
@@ -35,8 +35,27 @@ const FEATURES: FeatureCard[] = [
     color: "text-violet-600",
     bg: "bg-violet-50 border-violet-200",
     title: "ReAct Agent",
-    description: "An autonomous reasoning loop that thinks, picks a tool (your docs, web search, calculator), reads the result, and iterates up to 7 times.",
+    description: "An autonomous reasoning loop that thinks, picks a tool (your docs, web search, calculator), reads the result, and iterates up to 7 times before answering.",
     when: "When a question needs multiple steps — cross-referencing sources, doing math, or combining doc knowledge with live web results.",
+  },
+  {
+    id: "eval",
+    icon: FlaskConical,
+    color: "text-blue-600",
+    bg: "bg-blue-50 border-blue-200",
+    title: "RAG Evaluation",
+    description: "Paste a list of questions, run them through your collection, and get three quality scores per question: context relevance, faithfulness, and answer relevance.",
+    when: "When you want to measure whether your pipeline is finding the right content or compare retrieval strategies head-to-head.",
+    prereq: "Upload documents first — questions should relate to what's in the collection.",
+  },
+  {
+    id: "visualize",
+    icon: Telescope,
+    color: "text-indigo-600",
+    bg: "bg-indigo-50 border-indigo-200",
+    title: "Visualize",
+    description: "Three tools: see your chunks as a 2D scatter plot in vector space, inspect exactly what tokens enter the LLM prompt, and compare all 4 chunking strategies on the same text.",
+    when: "When you want to understand why the pipeline behaves the way it does — debug retrieval, visualise embeddings, or tune chunk settings.",
   },
   {
     id: "game",
@@ -45,7 +64,7 @@ const FEATURES: FeatureCard[] = [
     bg: "bg-amber-50 border-amber-200",
     title: "Quiz Game",
     description: "Pick a topic, the AI suggests subtopics, then generates multiple-choice questions from your documents, the web, or its own knowledge.",
-    when: "When you want to test comprehension of a subject or study uploaded material interactively.",
+    when: "When you want to test your understanding of a subject or study uploaded material interactively.",
   },
   {
     id: "portfolio",
@@ -57,23 +76,13 @@ const FEATURES: FeatureCard[] = [
     when: "When you want to turn a plain resume into a shareable, styled portfolio page without writing any HTML.",
   },
   {
-    id: "eval",
-    icon: FlaskConical,
-    color: "text-blue-600",
-    bg: "bg-blue-50 border-blue-200",
-    title: "RAG Evaluation",
-    description: "Paste a list of questions, run them through your collection, and get three quality scores per question: context relevance, faithfulness, and answer relevance.",
-    when: "When you want to compare retrieval strategies or measure whether your pipeline is actually finding the right content.",
-    prereq: "Upload documents first — questions should relate to what's in the collection.",
-  },
-  {
     id: "blueprint",
     icon: Compass,
     color: "text-gray-600",
     bg: "bg-gray-50 border-gray-200",
     title: "Blueprint",
-    description: "An interactive docs page covering every architectural decision — RAG pipeline diagrams, retrieval strategy trade-offs, concept explainers, and interview Q&A.",
-    when: "When you want to understand how the system works under the hood, or prepare for an AI/ML engineering interview.",
+    description: "An interactive docs page covering every architectural decision — setup guide, RAG pipeline diagrams, retrieval strategy trade-offs, concept explainers, and interview Q&A.",
+    when: "When you want to understand how the system works under the hood, set it up for the first time, or prepare for an AI/ML engineering interview.",
   },
 ];
 

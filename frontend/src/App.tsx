@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Gamepad2, Terminal, Compass, BrainCircuit, FileUser, Zap, FlaskConical } from "lucide-react";
+import { MessageSquare, Gamepad2, Terminal, Compass, BrainCircuit, FileUser, Zap, FlaskConical, Telescope } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { Chat } from "./components/Chat";
 import { GamePage } from "./components/game/GamePage";
@@ -8,20 +8,22 @@ import { Blueprint } from "./components/Blueprint";
 import { AgentPage } from "./components/AgentPage";
 import { PortfolioPage } from "./components/PortfolioPage";
 import { EvalPage } from "./components/EvalPage";
+import { VisualizePage } from "./components/VisualizePage";
 import { HomePage } from "./components/HomePage";
 import { ModelSelector } from "./components/ModelSelector";
 import { TerminalSidebar } from "./components/TerminalSidebar";
 import { ProcessProvider, useProcess } from "./context/ProcessContext";
 
-type Tab = "home" | "chat" | "game" | "blueprint" | "agent" | "portfolio" | "eval";
+type Tab = "home" | "chat" | "game" | "blueprint" | "agent" | "portfolio" | "eval" | "visualize";
 
 const TABS: { id: Tab; label: string; icon: typeof MessageSquare; hint: string }[] = [
   { id: "chat",      label: "Chat",      icon: MessageSquare,  hint: "RAG Chat"         },
   { id: "agent",     label: "Agent",     icon: BrainCircuit,   hint: "ReAct Agent"      },
   { id: "game",      label: "Quiz",      icon: Gamepad2,       hint: "Quiz Game"        },
   { id: "portfolio", label: "Portfolio", icon: FileUser,       hint: "CV → Portfolio"   },
-  { id: "eval",      label: "Eval",      icon: FlaskConical,   hint: "RAG Evaluation"   },
-  { id: "blueprint", label: "Blueprint", icon: Compass,        hint: "Docs & Blueprint" },
+  { id: "eval",      label: "Eval",      icon: FlaskConical,   hint: "RAG Evaluation"      },
+  { id: "visualize", label: "Visualize", icon: Telescope,      hint: "Embeddings & Context"},
+  { id: "blueprint", label: "Blueprint", icon: Compass,        hint: "Docs & Blueprint"    },
 ];
 
 // ─── Desktop icon nav ──────────────────────────────────────────────────────
@@ -129,7 +131,7 @@ function AppInner() {
   useEffect(() => {
     const labels: Record<Tab, string> = {
       home: "Home", chat: "Chat", game: "Quiz Game", blueprint: "Blueprint",
-      agent: "Agent", portfolio: "Portfolio", eval: "Eval",
+      agent: "Agent", portfolio: "Portfolio", eval: "Eval", visualize: "Visualize",
     };
     log("SYSTEM", `Switched to ${labels[tab]}`, "info");
   }, [tab]);
@@ -215,6 +217,9 @@ function AppInner() {
             </div>
             <div className={`absolute inset-0 flex overflow-hidden ${tab === "eval"      ? "" : "invisible pointer-events-none"}`}>
               <EvalPage />
+            </div>
+            <div className={`absolute inset-0 flex overflow-hidden ${tab === "visualize" ? "" : "invisible pointer-events-none"}`}>
+              <VisualizePage />
             </div>
             <div className={`absolute inset-0 flex overflow-hidden ${tab === "blueprint" ? "" : "invisible pointer-events-none"}`}>
               <Blueprint />
